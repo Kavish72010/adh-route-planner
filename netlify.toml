@@ -1,0 +1,9 @@
+[build]
+  command   = "node scripts/build-config.js"
+  publish   = "."
+  functions = "netlify/functions"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Alpha Digital Home — Route Planner</title>
+<meta name="description" content="Alpha Digital Home — Samsung Delivery Planner">
+<meta name="theme-color" content="#185FA5">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ADH Routes">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+:root{
+  --blue:#185FA5;--blue-light:#E6F1FB;--blue-mid:#378ADD;--blue-dark:#0C447C;
+  --teal:#0F6E56;--teal-light:#E1F5EE;--teal-mid:#1D9E75;
+  --amber:#854F0B;--amber-light:#FAEEDA;--amber-mid:#EF9F27;
+  --red:#A32D2D;--red-light:#FCEBEB;
+  --green:#3B6D11;--green-light:#EAF3DE;--green-mid:#639922;
+  --gray-bg:#F8F7F4;--gray-border:#E2E0DA;--gray-text:#5F5E5A;
+  --white:#FFFFFF;--text:#1A1A18;
+  --radius:10px;--radius-sm:6px;--shadow:0 1px 3px rgba(0,0,0,0.08);
+}
+/* Dark mode overrides */
+body.dark{
+  --blue:#4A9EE0;--blue-light:#1A2E45;--blue-mid:#5BAAE8;--blue-dark:#2D7ABF;
+  --teal:#2EC48A;--teal-light:#0D2B20;--teal-mid:#26A675;
+  --amber:#F0B040;--amber-light:#2A1F0A;--amber-mid:#E8A020;
+  --red:#E05555;--red-light:#2A1010;
+  --green:#5CB85C;--green-light:#0D2010;--green-mid:#4AA84A;
+  --gray-bg:#111318;--gray-border:#2A2D35;--gray-text:#8A8F9C;
+  --white:#1A1D24;--text:#E8EAF0;--shadow:0 1px 3px rgba(0,0,0,0.4);
+}
+body.dark .header{background:#1A1D24;border-color:#2A2D35}
+body.dark .nav-tabs{background:#1A1D24;border-color:#2A2D35}
+body.dark .card{background:#1A1D24;border-color:#2A2D35}
+body.dark .role-box{background:#1A1D24}
+body.dark input,body.dark select{background:#111318;color:#E8EAF0;border-color:#2A2D35}
+body.dark .driver-header{background:#0C1828}
+body.dark .driver-items-box,.dark .driver-actions{background:#1A1D24;border-color:#2A2D35}
+body.dark .stop-row{border-color:#2A2D35}
+body.dark .stop-row:hover td,.dark tr:hover td{background:#111318}
+body.dark .upload-zone{background:#111318;border-color:#2A2D35}
+body.dark .wh-row{background:#1F1A0A}
+body.dark table th{background:#111318}
+body.dark td{border-color:#2A2D35}
+body.dark .stat-card{background:#111318;border-color:#2A2D35}
+body.dark .driver-stop-item{background:#1A1D24;border-color:#2A2D35}
+body.dark .driver-stop-item.current{background:#1A2E45;border-color:var(--blue)}
+body.dark .driver-stop-item.done-stop{background:#111318}
+body.dark .mgr-trip-card,.dark .mgr-trip-head{border-color:#2A2D35}
+body.dark .mgr-trip-head{background:#0D2B20}
+body.dark .trip-header{background:#1A2E45}
+body.dark .dtt{background:#1A1D24;border-color:#2A2D35;color:#8A8F9C}
+body.dark .dtt.active{background:var(--blue);border-color:var(--blue);color:white}
+body.dark .pin-key{background:#1A1D24;border-color:#2A2D35;color:#E8EAF0}
+/* AI Chat */
+.ai-chip{padding:7px 14px;border-radius:20px;border:1.5px solid var(--gray-border);background:var(--white);color:var(--text);font-size:12px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.ai-chip:hover{background:var(--blue-light);border-color:var(--blue-mid);color:var(--blue-dark)}
+.ai-msg{display:flex;gap:10px;align-items:flex-start;animation:fadeIn .3s ease}
+.ai-msg-user{flex-direction:row-reverse}
+.ai-bubble{padding:10px 14px;border-radius:12px;font-size:13px;line-height:1.6;max-width:85%}
+.ai-bubble-user{background:var(--blue);color:white;border-radius:12px 12px 2px 12px}
+.ai-bubble-bot{background:var(--gray-bg);color:var(--text);border:1px solid var(--gray-border);border-radius:12px 12px 12px 2px}
+.ai-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:2px}
+.ai-avatar-bot{background:linear-gradient(135deg,#185FA5,#1D9E75);color:white}
+.ai-avatar-user{background:var(--blue);color:white}
+.ai-typing{display:flex;gap:4px;padding:12px 14px;align-items:center}
+.ai-dot{width:7px;height:7px;border-radius:50%;background:var(--gray-text);animation:bounce .8s infinite}
+.ai-dot:nth-child(2){animation-delay:.15s}
+.ai-dot:nth-child(3){animation-delay:.3s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+body.dark .ai-bubble-bot{background:#1A1D24;border-color:#2A2D35}
+body.dark .ai-chip{background:#1A1D24;border-color:#2A2D35;color:#E8EAF0}
+body.dark #ai-chat-box{background:#1A1D24;border-color:#2A2D35}
+body.dark #ai-input{background:#111318;color:#E8EAF0;border-color:#2A2D35}
+body.dark .modal{background:#1A1D24}
+body.dark .whatsapp-box{background:#0D2010;border-color:#1A4020;color:#A0E0A0}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-bg);color:var(--text);font-size:14px;line-height:1.5}
+#role-screen{position:fixed;inset:0;background:var(--blue-dark);display:flex;align-items:center;justify-content:center;z-index:9000}
+.role-box{background:white;border-radius:16px;padding:36px 32px;width:92%;max-width:380px;text-align:center}
+.role-logo{width:56px;height:56px;background:var(--blue);border-radius:12px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:20px;margin:0 auto 16px}
+.role-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.role-sub{font-size:13px;color:var(--gray-text);margin-bottom:28px}
+.role-btn{width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:10px;transition:all .15s}
+.role-btn-driver{background:var(--blue);color:white}
+.role-btn-driver:hover{background:var(--blue-dark)}
+.role-btn-manager{background:var(--teal-light);color:var(--teal);border:1.5px solid var(--teal-mid)}
+.role-btn-manager:hover{background:var(--teal-mid);color:white}
+.pin-section{display:none;margin-top:4px}
+.pin-title{font-size:13px;font-weight:600;color:var(--gray-text);margin-bottom:10px;text-transform:uppercase;letter-spacing:.4px}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:16px}
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--gray-border);background:white;transition:all .15s}
+.pin-dot.filled{background:var(--blue);border-color:var(--blue)}
+.pin-keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:220px;margin:0 auto 12px}
+.pin-key{padding:12px;border-radius:8px;font-size:17px;font-weight:600;cursor:pointer;border:1.5px solid var(--gray-border);background:white;transition:all .1s;color:var(--text)}
+.pin-key:hover{background:var(--blue-light);border-color:var(--blue-mid)}
+.pin-key:active{transform:scale(.93)}
+.pin-error{color:var(--red);font-size:12px;min-height:18px}
+.header{background:var(--white);border-bottom:1px solid var(--gray-border);padding:12px 20px;display:flex;align-items:center;gap:11px;position:sticky;top:0;z-index:100}
+.header-logo{width:34px;height:34px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:12px;flex-shrink:0}
+.header-title{font-size:14px;font-weight:600}
+.header-sub{font-size:11px;color:var(--gray-text)}
+.header-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.role-pill{display:flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:none}
+.role-pill-manager{background:var(--teal-light);color:var(--teal)}
+.role-pill-driver{background:var(--blue-light);color:var(--blue-dark)}
+.header-date{font-size:11px;color:var(--gray-text);background:var(--gray-bg);padding:4px 10px;border-radius:var(--radius-sm);border:1px solid var(--gray-border);white-space:nowrap}
+.nav-tabs{background:var(--white);border-bottom:1px solid var(--gray-border);padding:0 20px;display:flex;overflow-x:auto}
+.nav-tab{padding:10px 15px;font-size:13px;font-weight:500;color:var(--gray-text);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
+.nav-tab:hover{color:var(--text)}
+.nav-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+.main{padding:20px;max-width:1200px;margin:0 auto}
+.page{display:none}
+.page.active{display:block}
+.card{background:var(--white);border:1px solid var(--gray-border);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-icon{width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+label{display:block;font-size:11px;font-weight:600;color:var(--gray-text);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{width:100%;padding:8px 11px;border:1px solid var(--gray-border);border-radius:var(--radius-sm);font-size:13px;background:var(--white);color:var(--text);outline:none;transition:border .15s}
+input:focus,select:focus{border-color:var(--blue-mid)}
+.form-group{margin-bottom:12px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;text-decoration:none}
+.btn-primary{background:var(--blue);color:white}.btn-primary:hover{background:var(--blue-dark)}
+.btn-success{background:var(--teal);color:white}.btn-success:hover{background:var(--teal-mid)}
+.btn-outline{background:transparent;border:1px solid var(--gray-border);color:var(--text)}.btn-outline:hover{background:var(--gray-bg)}
+.btn-danger{background:var(--red);color:white}
+.btn-amber{background:var(--amber-mid);color:white}.btn-amber:hover{background:var(--amber)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-lg{padding:13px 20px;font-size:15px;font-weight:600;border-radius:9px}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap}
+.badge-blue{background:var(--blue-light);color:var(--blue-dark)}
+.badge-green{background:var(--green-light);color:var(--green)}
+.badge-amber{background:var(--amber-light);color:var(--amber)}
+.badge-red{background:var(--red-light);color:var(--red)}
+.badge-teal{background:var(--teal-light);color:var(--teal)}
+.badge-gray{background:var(--gray-bg);color:var(--gray-text);border:1px solid var(--gray-border)}
+.alert{padding:10px 13px;border-radius:var(--radius-sm);margin-bottom:12px;font-size:13px;line-height:1.5}
+.alert-warning{background:var(--amber-light);border-left:3px solid var(--amber-mid);color:var(--amber)}
+.alert-info{background:var(--blue-light);border-left:3px solid var(--blue-mid);color:var(--blue-dark)}
+.alert-success{background:var(--green-light);border-left:3px solid var(--green-mid);color:var(--green)}
+.table-wrapper{overflow-x:auto;border-radius:var(--radius-sm);border:1px solid var(--gray-border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--gray-bg);padding:8px 10px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--gray-text);border-bottom:1px solid var(--gray-border);white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid #F0EEE8;vertical-align:top}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--gray-bg)}
+.stat-card{background:var(--gray-bg);border-radius:var(--radius-sm);padding:12px;border:1px solid var(--gray-border)}
+.stat-label{font-size:11px;color:var(--gray-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:600}
+.stat-sub{font-size:11px;color:var(--gray-text);margin-top:2px}
+.upload-zone{border:2px dashed var(--gray-border);border-radius:var(--radius);padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--gray-bg)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--blue-mid);background:var(--blue-light)}
+input[type="file"]{display:none}
+.steps{display:flex;align-items:center;margin-bottom:20px;overflow-x:auto;padding-bottom:2px}
+.step{display:flex;align-items:center;gap:7px;flex-shrink:0}
+.step-num{width:25px;height:25px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:2px solid var(--gray-border);color:var(--gray-text)}
+.step.done .step-num{background:var(--teal);border-color:var(--teal);color:white}
+.step.active .step-num{background:var(--blue);border-color:var(--blue);color:white}
+.step-label{font-size:12px;font-weight:500;color:var(--gray-text)}
+.step.active .step-label{color:var(--blue)}
+.step.done .step-label{color:var(--teal)}
+.step-line{flex:1;height:2px;background:var(--gray-border);min-width:18px;max-width:48px}
+.step-line.done{background:var(--teal)}
+.trip-section{border:1px solid var(--gray-border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.trip-header{background:var(--blue-light);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.trip-num{width:28px;height:28px;background:var(--blue);border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px;flex-shrink:0}
+.stop-row{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #F0EEE8}
+.stop-row:last-child{border-bottom:none}
+.stop-seq{min-width:26px;height:26px;background:var(--gray-bg);border:1px solid var(--gray-border);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--gray-text);flex-shrink:0;margin-top:2px;padding:2px}
+.stop-name{font-weight:600;font-size:13px;margin-bottom:2px}
+.stop-address{font-size:12px;color:var(--gray-text);margin-bottom:4px}
+.stop-items{font-size:12px;color:var(--text);margin-bottom:3px}
+.stop-tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.stop-eta{margin-left:auto;text-align:right;flex-shrink:0}
+.stop-time{font-size:13px;font-weight:600;color:var(--teal)}
+.wh-row{background:#FFF9F0;border-left:3px solid var(--amber-mid)}
+.progress-wrap{background:var(--gray-border);border-radius:20px;height:8px;overflow:hidden;margin-top:5px}
+.progress-fill{height:100%;border-radius:20px;transition:width .4s}
+.prog-ok{background:var(--teal-mid)}.prog-warn{background:var(--amber-mid)}.prog-over{background:var(--red)}
+#delivery-map{height:400px;width:100%;border-radius:var(--radius);border:1px solid var(--gray-border);margin-bottom:16px}
+#driver-map{height:250px;width:100%;border-radius:var(--radius);border:1px solid var(--gray-border);margin-bottom:14px}
+#manager-map{height:360px;width:100%;border-radius:var(--radius);border:1px solid var(--gray-border);margin-bottom:16px}
+.map-wrap{position:relative}
+.map-legend{position:absolute;top:10px;right:10px;background:white;border-radius:8px;padding:9px 12px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.15);z-index:500;line-height:2}
+.legend-dot{display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.driver-header{background:var(--blue-dark);color:white;padding:16px 20px;border-radius:var(--radius) var(--radius) 0 0}
+.driver-trip-label{font-size:11px;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.driver-customer{font-size:20px;font-weight:700;margin-bottom:2px}
+.driver-address{font-size:13px;opacity:.85;margin-bottom:10px}
+.driver-meta{display:flex;gap:16px;font-size:13px;opacity:.9;flex-wrap:wrap}
+.driver-items-box{background:white;padding:14px 20px;border:1px solid var(--gray-border);border-top:none}
+.driver-item-row{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #F0EEE8;font-size:13px}
+.driver-item-row:last-child{border-bottom:none}
+.driver-actions{background:white;padding:13px 20px;border:1px solid var(--gray-border);border-top:none;border-radius:0 0 var(--radius) var(--radius);display:flex;gap:10px}
+.driver-stop-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:white;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:7px;transition:all .2s}
+.driver-stop-item.current{border-color:var(--blue);background:var(--blue-light);box-shadow:0 0 0 2px rgba(55,138,221,.2)}
+.driver-stop-item.done-stop{opacity:.5;background:var(--gray-bg)}
+.dsi-seq{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;border:2px solid var(--gray-border);color:var(--gray-text)}
+.dsi-seq.cur{background:var(--blue);color:white;border-color:var(--blue)}
+.dsi-seq.done{background:var(--green-mid);color:white;border-color:var(--green-mid)}
+.dsi-name{font-weight:600;font-size:13px}
+.dsi-addr{font-size:12px;color:var(--gray-text)}
+.dsi-eta{font-size:12px;font-weight:600;color:var(--teal);flex-shrink:0}
+.driver-trip-tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto}
+.dtt{padding:7px 14px;border-radius:20px;font-size:13px;font-weight:500;cursor:pointer;border:1.5px solid var(--gray-border);background:white;color:var(--gray-text);white-space:nowrap;transition:all .15s}
+.dtt.active{background:var(--blue);border-color:var(--blue);color:white}
+.mgr-trip-card{border:1px solid var(--gray-border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden}
+.mgr-trip-head{background:var(--teal-light);padding:12px 16px;display:flex;align-items:center;gap:10px}
+.mgr-stop-row{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid #F0EEE8}
+.mgr-stop-row:last-child{border-bottom:none}
+.mgr-status{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;font-weight:700}
+.ms-done{background:var(--green-mid);color:white}
+.ms-pending{background:var(--gray-bg);border:2px solid var(--gray-border);color:var(--gray-text)}
+.mgr-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.live-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#FEF3E2;color:#B45309}
+.live-dot{width:7px;height:7px;border-radius:50%;background:#F59E0B;animation:pulse 1.4s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.85)}}
+.section-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:11px;flex-wrap:wrap}
+.section-title{font-size:17px;font-weight:600}
+.section-sub{font-size:13px;color:var(--gray-text);margin-top:2px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:1000}
+.modal{background:var(--white);border-radius:var(--radius);padding:20px;width:92%;max-width:520px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,.15)}
+.modal-title{font-size:15px;font-weight:600;margin-bottom:15px}
+.modal-footer{display:flex;gap:9px;justify-content:flex-end;margin-top:16px;padding-top:13px;border-top:1px solid var(--gray-border)}
+.history-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}
+.empty-state{text-align:center;padding:40px 20px;color:var(--gray-text)}
+.empty-icon{font-size:38px;margin-bottom:9px;opacity:.5}
+.empty-title{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
+.geocode-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #F0EEE8;font-size:12px}
+.geocode-row:last-child{border-bottom:none}
+.gc-name{font-weight:500;min-width:140px}
+.gc-done{color:var(--teal)}.gc-fail{color:var(--red)}
+.spinner{width:14px;height:14px;border:2px solid var(--gray-border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.whatsapp-box{background:#ECF5E4;border:1px solid #B8D9A0;border-radius:var(--radius);padding:14px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7;white-space:pre-wrap;color:#1A3A0A;max-height:360px;overflow-y:auto}
+@media(max-width:768px){
+  .grid-2,.grid-4,.history-sum,.mgr-sum{grid-template-columns:1fr}
+  .form-row,.form-row-3{grid-template-columns:1fr}
+  .main{padding:12px}
+  #delivery-map{height:300px}
+  #driver-map{height:220px}
+  #manager-map{height:260px}
+}
+</style>
+</head>
+<body>
+
+<!-- ROLE SCREEN -->
+<div id="role-screen">
+  <div class="role-box">
+    <div class="role-logo">ADH</div>
+    <div class="role-title">Delivery Planner</div>
+    <div class="role-sub">Alpha Digital Home · Ahmedabad</div>
+    <button class="role-btn role-btn-driver" onclick="enterAsDriver()"><span style="font-size:22px">🚚</span> I'm the Driver</button>
+    <button class="role-btn role-btn-manager" onclick="showPinEntry()"><span style="font-size:22px">🏢</span> Manager / Planner</button>
+    <div class="pin-section" id="pin-section">
+      <div class="pin-title">Enter Manager PIN</div>
+      <div class="pin-dots">
+        <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="pin-keypad">
+        <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
+        <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
+        <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
+        <button class="pin-key" onclick="pinClear()" style="font-size:12px;color:var(--gray-text)">CLR</button>
+        <button class="pin-key" onclick="pinKey('0')">0</button>
+        <button class="pin-key" onclick="pinBack()" style="font-size:15px">⌫</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app-wrap" style="display:none">
+<div class="header">
+  <div class="header-logo">ADH</div>
+  <div><div class="header-title">Alpha Digital Home — Delivery Planner</div><div class="header-sub">Ahmedabad · v17 ☁️ ☁️</div></div>
+  <div class="header-right"><button id="refresh-btn" onclick="refreshCurrentPage()" style="background:none;border:none;cursor:pointer;font-size:17px;padding:4px 8px;border-radius:6px" title="Refresh this page">🔄</button><button id="dark-toggle" onclick="toggleDark()" style="background:none;border:none;cursor:pointer;font-size:18px;padding:4px 8px;border-radius:6px" title="Toggle dark mode">🌙</button>
+    <div class="live-badge" id="live-badge" style="display:none"><div class="live-dot"></div> Live</div>
+    <button class="role-pill" id="role-pill" onclick="switchRole()"></button>
+    <div class="header-date" id="header-date"></div>
+  </div>
+</div>
+<div class="nav-tabs" id="nav-tabs">
+  <div class="nav-tab" id="tab-plan" onclick="showPage('plan',this)">📋 Plan</div>
+  <div class="nav-tab" id="tab-driver" onclick="showPage('driver',this)">🚚 My Deliveries</div>
+  <div class="nav-tab" id="tab-track" onclick="showPage('track',this)">📍 Live Track</div>
+  <div class="nav-tab" id="tab-history" onclick="showPage('history',this)">📊 History</div>
+  <div class="nav-tab" id="tab-master" onclick="showPage('master',this)">📦 Products</div>
+  <div class="nav-tab" id="tab-settings" onclick="showPage('settings',this)">⚙️ Settings</div>
+  <div class="nav-tab" id="tab-ai" onclick="showPage('ai',this)">🤖 AI Insights</div>
+</div>
+<div class="main">
+
+<!-- PLAN PAGE -->
+<div id="page-plan" class="page">
+  <div class="steps">
+    <div class="step active" id="step-1"><div class="step-num">1</div><div class="step-label">Upload</div></div>
+    <div class="step-line" id="sl-1"></div>
+    <div class="step" id="step-2"><div class="step-num">2</div><div class="step-label">Review</div></div>
+    <div class="step-line" id="sl-2"></div>
+    <div class="step" id="step-3"><div class="step-num">3</div><div class="step-label">Route</div></div>
+    <div class="step-line" id="sl-3"></div>
+    <div class="step" id="step-4"><div class="step-num">4</div><div class="step-label">Done</div></div>
+  </div>
+  <div id="sec-upload">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title"><div class="card-icon" style="background:#E6F1FB;color:#185FA5">📂</div>Upload Frappe Excel</div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()" ondrop="handleDrop(event)" ondragover="handleDragOver(event)" ondragleave="this.classList.remove('dragover')">
+          <div style="font-size:30px;margin-bottom:8px">📊</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Drop your Frappe export here</div>
+          <div style="font-size:12px;color:var(--gray-text)">or click to browse · .xlsx / .xls</div>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+        <div style="margin-top:10px"><div class="alert alert-info" style="font-size:12px">Reads: <strong>Customer Name, Mobile#, Address, Area, City, Pincode, Model #, Category, Invoice No</strong></div></div>
+        <button class="btn btn-outline btn-sm" style="margin-top:7px" onclick="loadSampleData()">📋 Load sample data</button>
+      </div>
+      <div class="card">
+        <div class="card-title"><div class="card-icon" style="background:#E1F5EE;color:#0F6E56">🕐</div>Departure Settings</div>
+        <div class="form-row">
+          <div class="form-group"><label>Date</label><input type="date" id="dep-date"></div>
+          <div class="form-group"><label>Minutes per stop</label><input type="number" id="stop-min" value="20" min="5" max="90"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Departure <span style="font-size:10px;font-weight:400;text-transform:none">(tentative)</span></label><input type="time" id="dep-time" value="11:30"></div>
+          <div class="form-group"><label>End of day <span style="font-size:10px;font-weight:400;text-transform:none">(tentative)</span></label><input type="time" id="end-time" value="18:30"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Starting warehouse</label><select id="start-wh"><option value="auto">Auto-select</option><option value="shivranjani">Shivranjani</option><option value="sarkhej" selected>Sarkhej</option></select></div>
+          <div class="form-group"><label>Tempos</label><select id="num-tempos"><option value="1">1 tempo</option><option value="2">2 tempos</option></select></div>
+        </div>
+        <div class="form-group"><label>Google Maps API Key</label><input type="text" id="ors-key" value="" autocomplete="off" readonly style="background:var(--gray-bg);color:var(--gray-text);font-size:11px"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="processUpload()">▶ Process &amp; Geocode</button>
+      </div>
+    </div>
+  </div>
+  <div id="sec-geocoding" style="display:none">
+    <div class="card">
+      <div class="card-title"><div class="card-icon" style="background:#E6F1FB;color:#185FA5">📍</div>Geocoding addresses…</div>
+      <div class="alert alert-info" style="margin-bottom:12px">Converting addresses to map coordinates.</div>
+      <div id="geocode-list"></div>
+      <div style="margin-top:12px;display:flex;justify-content:flex-end"><button class="btn btn-outline btn-sm" onclick="skipGeocode()">Skip — use estimates</button></div>
+    </div>
+  </div>
+  <div id="sec-review" style="display:none">
+    <div class="section-header">
+      <div><div class="section-title">Review Deliveries</div><div class="section-sub">Set warehouse source and time constraints</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-outline btn-sm" onclick="goUpload()">← Back</button>
+        <button class="btn btn-outline btn-sm" onclick="openAddModal()">+ Add manually</button>
+        <button class="btn btn-outline btn-sm" onclick="addMoreExcel()">📂 Add Excel</button>
+        <button class="btn btn-primary" onclick="planRoute()">Plan Route →</button>
+      </div>
+    </div>
+    <div class="grid-4" id="review-stats" style="margin-bottom:16px"></div>
+    <div id="review-alerts"></div>
+    <div class="card">
+      <div class="card-title"><div class="card-icon" style="background:#E1F5EE;color:#0F6E56">🚚</div>Deliveries</div>
+      <div class="table-wrapper"><table><thead><tr><th>#</th><th>Customer</th><th>Address</th><th>Items</th><th>Vol</th><th>Source</th><th>Time window</th><th>Notes</th><th>Geo</th><th></th></tr></thead><tbody id="review-tbody"></tbody></table></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="card-icon" style="background:#FAEEDA;color:#854F0B">📦</div>Vehicle capacity</div>
+      <div class="grid-2">
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Total volume</span><strong id="vol-lbl">—</strong></div><div class="progress-wrap"><div class="progress-fill prog-ok" id="vol-bar" style="width:0%"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span>Floor area</span><strong id="floor-lbl">—</strong></div><div class="progress-wrap"><div class="progress-fill prog-ok" id="floor-bar" style="width:0%"></div></div></div>
+      </div>
+      <div id="trip-split-msg" style="margin-top:11px"></div>
+    </div>
+  </div>
+  <div id="sec-route" style="display:none">
+    <div class="section-header">
+      <div><div class="section-title">Delivery Route</div><div class="section-sub" id="route-sub">—</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn btn-outline btn-sm" onclick="goReview()">← Back</button>
+        <button class="btn btn-amber btn-sm" onclick="openWhatsApp()">💬 WhatsApp</button>
+        <button class="btn btn-outline btn-sm" onclick="saveAllTrips()">✅ Save all trips</button>
+      </div>
+    </div>
+    <div class="card" style="padding:12px 18px;margin-bottom:14px">
+      <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:var(--gray-text);text-transform:uppercase;letter-spacing:.4px">Departure</span><input type="time" id="route-dep-time" value="11:30" style="width:105px" onchange="replanRoute()"></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:var(--gray-text);text-transform:uppercase;letter-spacing:.4px">End of day</span><input type="time" id="route-end-time" value="18:30" style="width:105px" onchange="replanRoute()"></div>
+        <div style="display:flex;align-items:center;gap:8px"><span style="font-size:11px;font-weight:600;color:var(--gray-text);text-transform:uppercase;letter-spacing:.4px">Tempos</span><select id="route-tempos" style="width:120px" onchange="replanRoute()"><option value="1">1 tempo</option><option value="2">2 tempos</option></select></div>
+        <div id="overtime-banner"></div>
+      </div>
+    </div>
+    <div class="map-wrap"><div id="delivery-map"></div><div class="map-legend"><div><span class="legend-dot" style="background:#185FA5"></span>Delivery</div><div><span class="legend-dot" style="background:#EF9F27"></span>Warehouse</div><div><span class="legend-dot" style="background:#1D9E75"></span>Done</div></div></div>
+    <div id="trips-container"></div>
+  </div>
+  <div id="sec-done" style="display:none">
+    <div class="card" style="text-align:center;padding:38px 20px">
+      <div style="font-size:42px;margin-bottom:10px">✅</div>
+      <div style="font-size:18px;font-weight:600;margin-bottom:7px">Route saved!</div>
+      <div style="font-size:13px;color:var(--gray-text);margin-bottom:20px">Driver can now see it in the 🚚 My Deliveries tab.</div>
+      <button class="btn btn-primary" onclick="resetAll()">Plan another delivery</button>
+    </div>
+  </div>
+</div>
+
+<!-- DRIVER PAGE -->
+<div id="page-driver" class="page">
+  <div id="no-trips-msg" style="display:none" class="empty-state"><div class="empty-icon">🚚</div><div class="empty-title">No route planned yet</div><div style="font-size:13px">The manager hasn't saved today's route. Check back soon.</div></div>
+  <div id="driver-wrap" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div class="driver-trip-tabs" id="driver-trip-tabs" style="margin-bottom:0"></div>
+    <div id="driver-timing" style="font-size:12px;color:var(--gray-text);background:var(--gray-bg);padding:5px 10px;border-radius:20px;border:1px solid var(--gray-border)">
+      <span id="timing-start">—</span>
+    </div>
+  </div>
+    <div id="driver-map"></div>
+    <div id="current-stop-card" style="border-radius:var(--radius);overflow:hidden;margin-bottom:14px;box-shadow:0 2px 12px rgba(0,0,0,.12)">
+      <div class="driver-header">
+        <div class="driver-trip-label" id="ds-trip-label">TRIP 1</div>
+        <div class="driver-customer" id="ds-customer">—</div>
+        <div class="driver-address" id="ds-address">—</div>
+        <div class="driver-meta"><span>📦 <span id="ds-items">—</span></span><span>🕐 ETA <span id="ds-eta">—</span></span><span>📏 <span id="ds-dist">—</span> km</span></div>
+      </div>
+      <div class="driver-items-box" id="ds-items-list"></div>
+      <div class="driver-actions">
+        <a id="ds-nav-btn" href="#" target="_blank" class="btn btn-primary btn-lg" style="flex:1;justify-content:center">🗺 Navigate</a>
+        <button class="btn btn-success btn-lg" style="flex:1;justify-content:center" onclick="markDelivered()">✅ Mark Delivered</button>
+      </div>
+    </div>
+    <div id="driver-stops-list"></div>
+  </div>
+</div>
+
+<!-- MANAGER TRACK PAGE -->
+<div id="page-track" class="page">
+  <div class="section-header">
+    <div><div class="section-title">Live Tracking</div><div class="section-sub">Real-time delivery progress</div></div>
+    <div class="live-badge"><div class="live-dot"></div> Live</div>
+  </div>
+  <div class="mgr-sum" id="mgr-summary"></div>
+  <div id="manager-map"></div>
+  <div id="mgr-trips-container"></div>
+  <div id="mgr-no-trips" class="empty-state" style="display:none"><div class="empty-icon">📍</div><div class="empty-title">No active route</div><div style="font-size:13px">Save today's route from the Plan tab to see tracking here.</div></div>
+</div>
+
+<!-- HISTORY PAGE -->
+<div id="page-history" class="page">
+  <div class="section-header">
+    <div><div class="section-title">Delivery History</div></div>
+    <button class="btn btn-outline btn-sm" onclick="exportHistory()">⬇ Export Excel</button>
+  </div>
+  <div class="history-sum" id="hist-totals"></div>
+  <div class="card">
+    <div class="table-wrapper"><table><thead><tr><th>Date</th><th>Customers</th><th>Items</th><th>Trips</th><th>KM</th><th>Est. time</th><th></th></tr></thead><tbody id="hist-tbody"></tbody></table></div>
+    <div id="hist-empty" class="empty-state" style="display:none"><div class="empty-icon">📊</div><div class="empty-title">No history yet</div></div>
+  </div>
+</div>
+
+<!-- PRODUCT MASTER PAGE -->
+<div id="page-master" class="page">
+  <div class="section-header">
+    <div><div class="section-title">Product Master</div></div>
+    <button class="btn btn-primary btn-sm" onclick="openProdModal(null)">+ Add product</button>
+  </div>
+  <div class="grid-2" style="margin-bottom:14px">
+    <div class="card" style="padding:12px 16px"><input type="text" id="master-search" placeholder="Search…" oninput="renderMaster()"></div>
+    <div class="card" style="padding:12px 16px;font-size:12px;line-height:1.9">🔴 Floor: Fridges, WMs, TVs, ACs &nbsp;|&nbsp; 🟢 Stacks: Microwaves, Soundbars &nbsp;|&nbsp; 🔵 2 AC outdoor = 1 floor slot</div>
+  </div>
+  <div class="card"><div class="table-wrapper"><table><thead><tr><th>Prefix</th><th>Category</th><th>L×W×H (cm)</th><th>Vol (m³)</th><th>Floor (m²)</th><th>Floor?</th><th></th></tr></thead><tbody id="master-tbody"></tbody></table></div></div>
+</div>
+
+<!-- SETTINGS PAGE -->
+<div id="page-settings" class="page">
+  <div class="section-title" style="margin-bottom:18px">Settings</div>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">🏭 Warehouses</div>
+      <div class="form-group"><label>Shivranjani address</label><input type="text" id="wh1-addr" value="Shivranjani Cross Roads, Satellite, Ahmedabad 380015"></div>
+      <div class="form-row"><div class="form-group"><label>Latitude</label><input type="number" id="wh1-lat" value="23.0225" step="0.0001"></div><div class="form-group"><label>Longitude</label><input type="number" id="wh1-lng" value="72.5087" step="0.0001"></div></div>
+      <div class="form-group"><label>Sarkhej address</label><input type="text" id="wh2-addr" value="Sarkhej Bawla Highway, Sarkhej, Ahmedabad 382210"></div>
+      <div class="form-row"><div class="form-group"><label>Latitude</label><input type="number" id="wh2-lat" value="22.9876" step="0.0001"></div><div class="form-group"><label>Longitude</label><input type="number" id="wh2-lng" value="72.4985" step="0.0001"></div></div>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🚚 Vehicle &amp; App</div>
+      <div class="form-row"><div class="form-group"><label>Max volume (m³)</label><input type="number" id="veh-vol" value="3.63" step="0.01"></div><div class="form-group"><label>Floor area (m²)</label><input type="number" id="veh-floor" value="2.79" step="0.01"></div></div>
+      <div class="form-group"><label>Avg speed (km/h)</label><input type="number" id="veh-speed" value="25"></div>
+      <div class="form-group"><label>Business name</label><input type="text" id="biz-name" value="Alpha Digital Home"></div>
+      <div class="form-group"><label>Google Maps API Key</label><input type="text" id="ors-key-settings" value="" autocomplete="off" readonly style="font-size:11px"></div>
+      <div class="form-group">
+        <label>Manager PIN <span style="font-size:10px;font-weight:400;text-transform:none">(4 digits — default: 1234)</span></label>
+        <input type="password" id="mgr-pin-setting" maxlength="4" placeholder="Enter new PIN" autocomplete="off">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- AI INSIGHTS PAGE -->
+<div id="page-ai" class="page">
+  <div style="max-width:760px;margin:0 auto">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:20px">
+      <div style="width:46px;height:46px;background:linear-gradient(135deg,#185FA5,#1D9E75);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">🤖</div>
+      <div>
+        <div style="font-size:18px;font-weight:700">ADH Delivery Intelligence</div>
+        <div style="font-size:13px;color:var(--gray-text)">Ask anything about your deliveries, products, customers, or routes</div>
+      </div>
+    </div>
+
+    <!-- Suggested questions -->
+    <div id="ai-suggestions" style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--gray-text);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Suggested questions</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button class="ai-chip" onclick="askSuggestion(this)">Which area gets the most deliveries?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">What is our most delivered product?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">How many KM did we drive this month?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">Which customer has received the most orders?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">What was our busiest delivery day?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">How many refrigerators have we delivered?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">What is the average number of stops per trip?</button>
+        <button class="ai-chip" onclick="askSuggestion(this)">Which product category do we deliver most?</button>
+      </div>
+    </div>
+
+    <!-- Chat messages -->
+    <div id="ai-chat-box" style="background:var(--white);border:1px solid var(--gray-border);border-radius:var(--radius);min-height:300px;max-height:500px;overflow-y:auto;padding:16px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px">
+      <div id="ai-welcome" style="text-align:center;padding:30px 20px;color:var(--gray-text)">
+        <div style="font-size:36px;margin-bottom:10px">🤖</div>
+        <div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">Hello! I'm your ADH Delivery Assistant</div>
+        <div style="font-size:13px">Ask me anything about your delivery history, customers, products, or routes. I can analyse your data and give you insights instantly.</div>
+      </div>
+    </div>
+
+    <!-- Input area -->
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      <textarea id="ai-input" placeholder="Ask me anything about your deliveries…" rows="2"
+        style="flex:1;resize:none;border-radius:10px;padding:10px 14px;font-size:14px;font-family:inherit;border:1.5px solid var(--gray-border);outline:none;transition:border .15s;background:var(--white);color:var(--text)"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAIChat();}"
+        onfocus="this.style.borderColor='var(--blue-mid)'"
+        onblur="this.style.borderColor='var(--gray-border)'"></textarea>
+      <button onclick="sendAIChat()" id="ai-send-btn"
+        style="background:var(--blue);color:white;border:none;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;flex-shrink:0;height:44px;transition:background .15s"
+        onmouseover="this.style.background='var(--blue-dark)'"
+        onmouseout="this.style.background='var(--blue)'">Send ↑</button>
+    </div>
+    <div style="font-size:11px;color:var(--gray-text);margin-top:7px;text-align:center">Powered by Claude AI · reads your live Supabase delivery data</div>
+  </div>
+</div>
+
+</div></div><!-- /main /app-wrap -->
+
+<!-- MODALS -->
+<div id="modal-tc" class="modal-overlay" style="display:none"><div class="modal">
+  <div class="modal-title">⏰ Time constraint — <span id="tc-cust-name"></span></div>
+  <div class="form-group"><label>Type</label><select id="tc-type" onchange="tcTypeChange()"><option value="none">No constraint</option><option value="before">Must deliver BEFORE</option><option value="after">Available AFTER</option><option value="between">BETWEEN two times</option></select></div>
+  <div id="tc-fields" style="display:none"><div class="form-row"><div class="form-group"><label id="tc-lbl1">Time</label><input type="time" id="tc-t1"></div><div class="form-group" id="tc-t2-wrap" style="display:none"><label>Until</label><input type="time" id="tc-t2"></div></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-tc')">Cancel</button><button class="btn btn-primary" onclick="saveTc()">Save</button></div>
+</div></div>
+<div id="modal-wh" class="modal-overlay" style="display:none"><div class="modal">
+  <div class="modal-title">🏭 Source warehouse — <span id="wh-cust-name"></span></div>
+  <div class="form-group"><label>Warehouse</label><select id="wh-select"><option value="shivranjani">Shivranjani (Satellite)</option><option value="sarkhej">Sarkhej</option><option value="both">Both</option></select></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-wh')">Cancel</button><button class="btn btn-primary" onclick="saveWh()">Save</button></div>
+</div></div>
+<div id="modal-prod" class="modal-overlay" style="display:none"><div class="modal">
+  <div class="modal-title" id="prod-modal-title">📦 Add product</div>
+  <div class="form-row"><div class="form-group"><label>Model prefix</label><input type="text" id="pm-prefix" oninput="prodVolPreview()"></div><div class="form-group"><label>Category</label><select id="pm-cat"><option>REFRIGERATOR</option><option>WASHING MACHINE</option><option>TELEVISION</option><option>AIR CONDITIONER (INDOOR)</option><option>AIR CONDITIONER (OUTDOOR)</option><option>MICROWAVE</option><option>SOUNDBAR</option><option>COMMERCIAL DISPLAY</option><option>OTHER</option></select></div></div>
+  <div class="form-row-3"><div class="form-group"><label>L (cm)</label><input type="number" id="pm-l" oninput="prodVolPreview()"></div><div class="form-group"><label>W (cm)</label><input type="number" id="pm-w" oninput="prodVolPreview()"></div><div class="form-group"><label>H (cm)</label><input type="number" id="pm-h" oninput="prodVolPreview()"></div></div>
+  <div class="form-row"><div class="form-group"><label>Weight (kg)</label><input type="number" id="pm-wt"></div><div class="form-group"><label>Needs floor?</label><select id="pm-floor"><option value="yes">Yes</option><option value="no">No — stacks</option></select></div></div>
+  <div id="pm-vol-preview" style="font-size:12px;color:var(--gray-text);margin:-4px 0 10px"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-prod')">Cancel</button><button class="btn btn-primary" onclick="saveProd()">Save</button></div>
+</div></div>
+<div id="modal-add" class="modal-overlay" style="display:none"><div class="modal">
+  <div class="modal-title">+ Add delivery manually</div>
+  <div class="form-row"><div class="form-group"><label>Customer</label><input type="text" id="ad-name"></div><div class="form-group"><label>Phone</label><input type="tel" id="ad-phone"></div></div>
+  <div class="form-group"><label>Address</label><input type="text" id="ad-addr"></div>
+  <div class="form-group"><label>Models (comma separated)</label><input type="text" id="ad-models" placeholder="RT28K, WW65T…"></div>
+  <div class="form-row"><div class="form-group"><label>Warehouse</label><select id="ad-wh"><option value="shivranjani">Shivranjani</option><option value="sarkhej">Sarkhej</option><option value="both">Both</option></select></div><div class="form-group"><label>Invoice</label><input type="text" id="ad-inv"></div></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-add')">Cancel</button><button class="btn btn-primary" onclick="saveAddDelivery()">Add</button></div>
+</div></div>
+<div id="modal-wa" class="modal-overlay" style="display:none"><div class="modal" style="max-width:580px">
+  <div class="modal-title">💬 WhatsApp message</div>
+  <div class="whatsapp-box" id="wa-content"></div>
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-wa')">Close</button><button class="btn btn-success" onclick="copyWA()">📋 Copy</button><button class="btn btn-amber" onclick="sendWA()">Open WhatsApp ↗</button></div>
+</div></div>
+<script src="config.js"></script>
+<script>
+// ── STATE ──
+let S={deliveries:[],trips:[],tcIdx:null,whIdx:null,prodIdx:null};
+let APP={role:null,driverTripIdx:0};
+let settings=loadSettings(),products=loadProducts(),history=loadHistory(),activeRoute=loadActiveRoute();
+let planMap=null,driverMap=null,mgrMap=null,planLayers=[],driverLayers=[],mgrLayers=[];
+// ORS replaced by Google Maps API
+
+// ── PIN / ROLE ──
+let pinBuffer='';
+function showPinEntry(){document.getElementById('pin-section').style.display='block';pinBuffer='';updatePinDots();document.getElementById('pin-error').textContent='';}
+function pinKey(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDots();if(pinBuffer.length===4)setTimeout(checkPin,120);}
+function pinBack(){if(pinBuffer.length)pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
+function pinClear(){pinBuffer='';updatePinDots();document.getElementById('pin-error').textContent='';}
+function updatePinDots(){for(let i=0;i<4;i++)document.getElementById('pd'+i).className='pin-dot'+(i<pinBuffer.length?' filled':'');}
+function checkPin(){if(pinBuffer===(settings.managerPin||'1234')){enterAsManager();}else{document.getElementById('pin-error').textContent='Wrong PIN. Try again.';pinBuffer='';updatePinDots();}}
+async function enterAsDriver(){
+  APP.role='driver';
+  document.getElementById('role-screen').style.display='none';
+  document.getElementById('app-wrap').style.display='block';
+  applyRole();
+  // Load latest route from cloud — so driver's phone always has today's plan
+  setSyncStatus('loading','⏳ Loading route…');
+  const cloud=await loadRouteFromCloud();
+  if(cloud){activeRoute=cloud;saveActiveRoute(activeRoute);}
+  setSyncStatus('idle');
+  renderDriverPage();
+  setTimeout(initDriverMap,200);
+}
+async function enterAsManager(){
+  APP.role='manager';
+  document.getElementById('role-screen').style.display='none';
+  document.getElementById('app-wrap').style.display='block';
+  applyRole();
+  // Load today's route so manager sees current state
+  const cloud=await loadRouteFromCloud();
+  if(cloud){activeRoute=cloud;saveActiveRoute(activeRoute);}
+  // Start polling every 8s so manager sees driver progress live
+  startPolling();
+}
+function switchRole(){stopPolling();document.getElementById('app-wrap').style.display='none';document.getElementById('role-screen').style.display='flex';document.getElementById('pin-section').style.display='none';pinBuffer='';}
+function applyRole(){
+  const m=APP.role==='manager';
+  const managerTabs=['tab-plan','tab-track','tab-history','tab-master','tab-settings','tab-ai'];
+  managerTabs.forEach(id=>{const el=document.getElementById(id);if(el)el.style.display=m?'':'none';});
+  const driverTab=document.getElementById('tab-driver');if(driverTab)driverTab.style.display=m?'none':'';
+  document.getElementById('live-badge').style.display=m?'none':'flex';
+  const pill=document.getElementById('role-pill');pill.className='role-pill '+(m?'role-pill-manager':'role-pill-driver');pill.textContent=m?'🏢 Manager':'🚚 Driver';
+  if(m){const first=document.getElementById('tab-plan');showPage('plan',first);}
+  else{const fd=document.getElementById('tab-driver');showPage('driver',fd);}
+}
+
+// ── INIT ──
+function init(){
+  const d=new Date();
+  document.getElementById('header-date').textContent=d.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+  document.getElementById('dep-date').value=todayIST();
+  const k=GMAPS_KEY?GMAPS_KEY.slice(0,8)+'…(set in config.js)':'Not set — add it to config.js';
+  document.getElementById('ors-key').value=k;
+  if(document.getElementById('ors-key-settings'))document.getElementById('ors-key-settings').value=k;
+  loadSettingsUI();renderMaster();renderHistory();
+}
+
+// ── NAV ──
+let currentPageId='plan'; // tracked for the refresh button (FIX 3)
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
+  if(el)el.classList.add('active');
+  currentPageId=id;
+  if(id==='history')renderHistory();
+  if(id==='track'){renderManagerTrack();setTimeout(initMgrMap,150);}
+  if(id==='driver'){renderDriverPage();setTimeout(initDriverMap,150);}
+  if(id==='master')renderMaster();
+}
+
+// FIX 3: refresh button — re-fetches/re-renders whichever page is currently open
+async function refreshCurrentPage(){
+  const btn=document.getElementById('refresh-btn');
+  if(btn){btn.style.transition='transform .5s';btn.style.transform='rotate(360deg)';setTimeout(()=>{btn.style.transform='rotate(0deg)';},500);}
+  switch(currentPageId){
+    case 'driver':
+      await renderDriverPage();
+      setTimeout(initDriverMap,150);
+      break;
+    case 'track':
+      await renderManagerTrack();
+      setTimeout(initMgrMap,150);
+      break;
+    case 'history':
+      history=loadHistory();
+      renderHistory();
+      break;
+    case 'master':
+      products=loadProducts();
+      renderMaster();
+      break;
+    case 'plan':
+      if(S.trips.length){setTimeout(initPlanMap,100);}
+      else if(S.deliveries.length){renderReview();}
+      break;
+    case 'settings':
+      loadSettingsUI();
+      break;
+    case 'ai':
+      // nothing to refresh — chat history stays
+      break;
+  }
+  // Always refresh active route from cloud, since that's shared truth
+  const fresh=await loadRouteFromCloud();
+  if(fresh){activeRoute=fresh;saveActiveRoute(activeRoute);}
+}
+function setStep(n){for(let i=1;i<=4;i++){document.getElementById('step-'+i).className='step'+(i<n?' done':i===n?' active':'');const sl=document.getElementById('sl-'+i);if(sl)sl.className='step-line'+(i<n?' done':'');}}
+function showSec(id){['sec-upload','sec-geocoding','sec-review','sec-route','sec-done'].forEach(s=>{document.getElementById(s).style.display=(s===id?'block':'none');});}
+
+// ── LEAFLET HELPERS ──
+function mkMarker(lat,lng,html,size){const icon=L.divIcon({className:'',html,iconSize:[size,size],iconAnchor:[size/2,size/2]});return L.marker([lat,lng],{icon});}
+function clearLayers(arr,map){arr.forEach(l=>{try{map.removeLayer(l);}catch(e){}});arr.length=0;}
+// Distinct colors per trip (cycles if there are more trips than colors) so
+// every trip's route line and stop numbers are visually distinguishable,
+// not just "trip 1 vs everything else".
+const TRIP_COLORS=['#185FA5','#0F6E56','#A0522D','#7B3FA0','#C2410C'];
+function tripColor(ti){return TRIP_COLORS[ti%TRIP_COLORS.length];}
+// FIX 2: multiple trips legitimately start/end at the SAME warehouse, so
+// their markers land on the exact same lat/lng and stack perfectly on top
+// of each other — only the last one drawn is visible, making it look like
+// a trip's first stop is "missing". This nudges each repeat marker at an
+// identical coordinate a few metres away in a small circle so every trip's
+// pin stays visible and clickable.
+function offsetForOverlap(lat,lng,key,counts){
+  const n=counts[key]=(counts[key]||0);
+  counts[key]++;
+  if(n===0)return[lat,lng];
+  const angle=n*(Math.PI*2/6),r=0.0006*Math.ceil(n/6);
+  return[lat+r*Math.cos(angle),lng+r*Math.sin(angle)];
+}
+
+// ── PLAN MAP ──
+function initPlanMap(){
+  if(!S.trips.length)return;
+  if(!planMap){planMap=L.map('delivery-map');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(planMap);}
+  clearLayers(planLayers,planMap);
+  const bounds=[];const prog=(activeRoute&&activeRoute.progress)||{};
+  const overlapCounts={}; // FIX 2: tracks repeat coordinates so shared warehouse pins don't stack invisibly
+  S.trips.forEach((trip,ti)=>{
+    const col=tripColor(ti);
+    const pts=trip.stops.map(s=>stopCoords(s)).filter(Boolean);
+    if(pts.length>1){const l=L.polyline(pts,{color:col,weight:3,opacity:.7}).addTo(planMap);planLayers.push(l);}
+    let seq=0;
+    trip.stops.forEach(s=>{
+      const sc_=stopCoords(s);if(!sc_)return;
+      let[slat_,slng_]=sc_;
+      // FIX 2 (generalized): ANY two stops — not just warehouse pickups —
+      // can land on the exact same coordinate, most often because two
+      // different customers' addresses both failed precise geocoding and
+      // fell back to the same area's default point. When that happens the
+      // later marker is drawn directly on top of the earlier one, hiding
+      // it completely. Nudge every repeated coordinate apart, regardless
+      // of stop type or which trip it belongs to.
+      const key=slat_.toFixed(4)+','+slng_.toFixed(4);
+      [slat_,slng_]=offsetForOverlap(slat_,slng_,key,overlapCounts);
+      bounds.push([slat_,slng_]);
+      let html;
+      if(s.type==='wh'){html=`<div style="background:#EF9F27;color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)">🏭</div>`;}
+      else{seq++;const done=prog[s.customer];const bg=done?'#1D9E75':col;html=`<div style="background:${bg};color:white;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)">${seq}</div>`;}
+      const m=mkMarker(slat_,slng_,html,28).addTo(planMap);
+      m.bindPopup(`<b>${s.type==='wh'?s.name:s.customer}</b>${s.type==='wh'?` · Trip ${trip.tripNum}`:''}<br>${s.addr||''}<br><b style="color:#185FA5">${s.arriveTime}</b>`,{maxWidth:200});
+      planLayers.push(m);
+    });
+  });
+  if(bounds.length)planMap.fitBounds(bounds,{padding:[24,24]});
+}
+
+// ── DRIVER MAP ──
+function initDriverMap(){
+  if(!activeRoute||!activeRoute.trips)return;
+  if(!driverMap){driverMap=L.map('driver-map',{zoomControl:false});L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(driverMap);L.control.zoom({position:'bottomright'}).addTo(driverMap);}
+  clearLayers(driverLayers,driverMap);
+  const trip=activeRoute.trips[APP.driverTripIdx];if(!trip)return;
+  const prog=activeRoute.progress||{};
+  const bounds=[];let seq=0;
+  const pts=trip.stops.map(s=>stopCoords(s)).filter(Boolean);
+  if(pts.length>1){const l=L.polyline(pts,{color:'#185FA5',weight:3,opacity:.6}).addTo(driverMap);driverLayers.push(l);}
+  const delivStops=trip.stops.filter(s=>s.type==='delivery');
+  const firstPending=delivStops.findIndex(s=>!prog[s.customer]);
+  const overlapCounts={}; // FIX 2: same protection as the plan/manager maps
+  trip.stops.forEach(s=>{
+    const sc2_=stopCoords(s);if(!sc2_)return;
+    let[slat_,slng_]=sc2_;
+    const key=slat_.toFixed(4)+','+slng_.toFixed(4);
+    [slat_,slng_]=offsetForOverlap(slat_,slng_,key,overlapCounts);
+    bounds.push([slat_,slng_]);
+    let html;
+    if(s.type==='wh'){html=`<div style="background:#EF9F27;color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid white;box-shadow:0 2px 5px rgba(0,0,0,.3)">🏭</div>`;}
+    else{seq++;const done=prog[s.customer];const isCur=!done&&(seq-1===firstPending);const bg=done?'#1D9E75':isCur?'#E53E3E':'#185FA5';const sz=isCur?34:26;html=`<div style="background:${bg};color:white;width:${sz}px;height:${sz}px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:${isCur?13:11}px;font-weight:700;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.35)">${done?'✓':seq}</div>`;}
+    const m=mkMarker(slat_,slng_,html,34).addTo(driverMap);
+    if(s.type==='delivery')m.bindPopup(`<b>${s.customer}</b><br>${s.addr||''}`,{maxWidth:180});
+    driverLayers.push(m);
+  });
+  if(bounds.length)driverMap.fitBounds(bounds,{padding:[20,20]});
+  if(navigator.geolocation){navigator.geolocation.getCurrentPosition(pos=>{const{latitude:lat,longitude:lng}=pos.coords;const gm=mkMarker(lat,lng,`<div style="background:#E53E3E;width:14px;height:14px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>`,14).addTo(driverMap);gm.bindTooltip('You',{permanent:true,direction:'top',offset:[0,-8]});driverLayers.push(gm);},()=>{},{enableHighAccuracy:true,timeout:8000});}
+}
+
+// ── MANAGER MAP ──
+function initMgrMap(){
+  if(!activeRoute||!activeRoute.trips)return;
+  if(!mgrMap){mgrMap=L.map('manager-map');L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM',maxZoom:18}).addTo(mgrMap);}
+  clearLayers(mgrLayers,mgrMap);
+  const prog=activeRoute.progress||{};const bounds=[];
+  const overlapCounts={}; // FIX 2: tracks repeat coordinates so shared warehouse pins don't stack invisibly
+  activeRoute.trips.forEach((trip,ti)=>{
+    const col=tripColor(ti);
+    const pts=trip.stops.map(s=>stopCoords(s)).filter(Boolean);
+    if(pts.length>1){const l=L.polyline(pts,{color:col,weight:3,opacity:.5,dashArray:'6,4'}).addTo(mgrMap);mgrLayers.push(l);}
+    let seq=0;
+    trip.stops.forEach(s=>{
+      const sc_=stopCoords(s);if(!sc_)return;
+      let[slat_,slng_]=sc_;
+      // FIX 2 (generalized): see initPlanMap for why this applies to every
+      // stop type, not just warehouse pickups.
+      const key=slat_.toFixed(4)+','+slng_.toFixed(4);
+      [slat_,slng_]=offsetForOverlap(slat_,slng_,key,overlapCounts);
+      bounds.push([slat_,slng_]);
+      let html;
+      if(s.type==='wh'){html=`<div style="background:#EF9F27;color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,.3)">🏭</div>`;}
+      else{seq++;const done=prog[s.customer];const bg=done?'#1D9E75':col;html=`<div style="background:${bg};color:white;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;border:2px solid white;box-shadow:0 2px 4px rgba(0,0,0,.3)">${done?'✓':seq}</div>`;}
+      const m=mkMarker(slat_,slng_,html,26).addTo(mgrMap);
+      const done=s.type==='delivery'&&prog[s.customer];
+      m.bindPopup(`<b>${s.type==='wh'?s.name:s.customer}</b>${s.type==='wh'?` · Trip ${trip.tripNum}`:''}<br>${s.addr||''}<br><span style="color:${done?'#1D9E75':'#185FA5'};font-weight:600">${done?'✅ Delivered':'⏳ Pending'}</span>${s.type==='delivery'?getDeliveryPhoto(s.customer):''}`,{maxWidth:240});
+      mgrLayers.push(m);
+    });
+  });
+  if(bounds.length)mgrMap.fitBounds(bounds,{padding:[20,20]});
+}
+
+// ── DRIVER PAGE ──
+async function renderDriverPage(){
+  // Always try to get fresh data from cloud first
+  const cloud=await loadRouteFromCloud();
+  if(cloud){activeRoute=cloud;saveActiveRoute(activeRoute);}
+  else{activeRoute=loadActiveRoute();}
+  if(!activeRoute||!activeRoute.trips||!activeRoute.trips.length){document.getElementById('no-trips-msg').style.display='block';document.getElementById('driver-wrap').style.display='none';return;}
+  document.getElementById('no-trips-msg').style.display='none';document.getElementById('driver-wrap').style.display='block';
+  recordDriverStart();updateTimingDisplay();
+  const tabs=document.getElementById('driver-trip-tabs');
+  const multiTempo=activeRoute.trips.some(t=>t.tempo===2);
+  tabs.innerHTML=activeRoute.trips.map((t,i)=>{const ds=t.stops.filter(s=>s.type==='delivery');const done=ds.filter(s=>(activeRoute.progress||{})[s.customer]).length;return`<button class="dtt${i===APP.driverTripIdx?' active':''}" onclick="switchDriverTrip(${i})">Trip ${t.tripNum}${multiTempo?' (T'+t.tempo+')':''} · ${done}/${ds.length}</button>`;}).join('');
+  renderCurrentStop();renderDriverStopsList();
+}
+function switchDriverTrip(i){APP.driverTripIdx=i;renderDriverPage();setTimeout(initDriverMap,100);}
+function renderCurrentStop(){
+  const trip=activeRoute.trips[APP.driverTripIdx];
+  const prog=activeRoute.progress||{};
+  const ds=trip.stops.filter(s=>s.type==='delivery');
+  const pending=ds.filter(s=>!prog[s.customer]);
+  const card=document.getElementById('current-stop-card');
+  if(!pending.length){card.innerHTML=`<div style="background:var(--teal);color:white;padding:24px;border-radius:var(--radius);text-align:center"><div style="font-size:36px;margin-bottom:8px">🎉</div><div style="font-size:18px;font-weight:700">Trip ${trip.tripNum} Complete!</div><div style="opacity:.85;margin-top:4px;font-size:13px">All deliveries done</div></div>`;return;}
+  const s=pending[0];const done=ds.length-pending.length;
+  // Ensure card structure exists
+  if(!card.querySelector('.driver-header')){
+    card.innerHTML=`
+  <div class="driver-header">
+    <div class="driver-trip-label" id="ds-trip-label"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">
+      <div class="driver-customer" id="ds-customer" style="flex:1"></div>
+      <a id="ds-call-btn" href="#" style="display:none;background:rgba(255,255,255,0.2);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;font-size:20px;text-decoration:none;flex-shrink:0" title="Call customer">📞</a>
+    </div>
+    <div class="driver-address" id="ds-address"></div>
+    <div id="ds-notes" style="display:none;background:rgba(255,215,0,0.2);border-radius:6px;padding:7px 10px;margin-top:8px;font-size:13px;border-left:3px solid #FFD700"></div>
+    <div class="driver-meta" style="margin-top:8px"><span>📦 <span id="ds-items"></span></span><span>🕐 ETA <span id="ds-eta"></span></span><span>📏 <span id="ds-dist"></span> km</span></div>
+  </div>
+  <div class="driver-items-box" id="ds-items-list"></div>
+  <div class="driver-actions" style="flex-wrap:wrap;gap:8px">
+    <a id="ds-nav-btn" href="#" target="_blank" class="btn btn-primary btn-lg" style="flex:1;justify-content:center;min-width:120px">🗺 Navigate</a>
+    <button class="btn btn-outline btn-lg" style="flex:1;justify-content:center;min-width:120px" onclick="openPhotoCapture()" title="Optional — take delivery photo">📷 Photo</button>
+    <button class="btn btn-success btn-lg" style="width:100%;justify-content:center" onclick="markDelivered()">✅ Mark Delivered</button>
+  </div>
+  <div id="photo-preview-area" style="padding:10px 20px;display:none;border-top:1px solid var(--gray-border)">
+    <img id="photo-preview-img" style="max-width:100%;border-radius:8px;max-height:200px;object-fit:cover">
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn btn-outline btn-sm" onclick="clearPhoto()">✕ Remove photo</button>
+      <span style="font-size:12px;color:var(--teal);align-self:center">✓ Photo ready — will upload on delivery</span>
+    </div>
+  </div>`;
+  }
+  document.getElementById('ds-trip-label').textContent=`TRIP ${trip.tripNum} · STOP ${done+1} OF ${ds.length}`;
+  document.getElementById('ds-customer').textContent=s.customer;
+  document.getElementById('ds-address').textContent=s.addr||'Address not set';
+  document.getElementById('ds-items').textContent=s.items.length+' item'+(s.items.length>1?'s':'');
+  document.getElementById('ds-eta').textContent=s.arriveTime;
+  document.getElementById('ds-dist').textContent=s.distKm;
+  document.getElementById('ds-nav-btn').href=s.navUrl||'#';
+  document.getElementById('ds-items-list').innerHTML=s.items.map(it=>`<div class="driver-item-row"><span style="font-weight:600;flex:1">${esc(it.model)}</span><span class="badge badge-blue">${esc(it.cat)}</span></div>`).join('');
+  // Call button
+  const callBtn=document.getElementById('ds-call-btn');
+  if(callBtn){if(s.phone){callBtn.href='tel:'+s.phone.replace(/\D/g,'');callBtn.style.display='flex';}else{callBtn.style.display='none';}}
+  // Delivery notes
+  const notesEl=document.getElementById('ds-notes');
+  if(notesEl){if(s.notes){notesEl.textContent='📝 '+s.notes;notesEl.style.display='block';}else{notesEl.style.display='none';}}
+  // Clear any previous photo
+  APP.pendingPhoto=null;
+  const pa=document.getElementById('photo-preview-area');if(pa)pa.style.display='none';
+}
+function renderDriverStopsList(){
+  const trip=activeRoute.trips[APP.driverTripIdx];const prog=activeRoute.progress||{};
+  let seq=0,html='';
+  trip.stops.forEach(s=>{
+    if(s.type==='wh'){html+=`<div style="display:flex;align-items:center;gap:9px;padding:9px 13px;background:white;border:1px solid var(--gray-border);border-radius:8px;margin-bottom:7px;opacity:.8"><div style="width:28px;height:28px;background:#FFF3E0;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">🏭</div><div><div style="font-weight:600;font-size:13px">${esc(s.name)}</div><div style="font-size:11px;color:var(--gray-text)">Load items · ${s.arriveTime}</div></div></div>`;return;}
+    seq++;const done=prog[s.customer];const isNext=!done&&seq===1+Object.keys(prog).filter(k=>trip.stops.some(x=>x.customer===k)).length;
+    html+=`<div class="driver-stop-item${isNext?' current':done?' done-stop':''}"><div class="dsi-seq${isNext?' cur':done?' done':''}">${done?'✓':seq}</div><div style="flex:1"><div class="dsi-name">${esc(s.customer)}</div><div class="dsi-addr">${esc((s.addr||'').substring(0,55))}</div><div style="margin-top:3px">${s.items.map(it=>`<span class="badge badge-blue" style="margin-right:3px">${esc(it.model)}</span>`).join('')}</div></div><div class="dsi-eta">${s.arriveTime}</div></div>`;
+  });
+  document.getElementById('driver-stops-list').innerHTML=html;
+}
+// ── MANAGER TRACK ──
+async function renderManagerTrack(){
+  const cloud=await loadRouteFromCloud();
+  if(cloud){activeRoute=cloud;saveActiveRoute(activeRoute);}
+  else{activeRoute=loadActiveRoute();}
+  const c=document.getElementById('mgr-trips-container'),no=document.getElementById('mgr-no-trips');
+  if(!activeRoute||!activeRoute.trips||!activeRoute.trips.length){c.innerHTML='';no.style.display='block';document.getElementById('mgr-summary').innerHTML='';return;}
+  no.style.display='none';
+  const prog=activeRoute.progress||{};
+  const allD=activeRoute.trips.flatMap(t=>t.stops.filter(s=>s.type==='delivery'));
+  const doneN=allD.filter(s=>prog[s.customer]).length;
+  const totKm=activeRoute.trips.reduce((s,t)=>s+t.totalKm,0);
+  document.getElementById('mgr-summary').innerHTML=`<div class="stat-card"><div class="stat-label">Total stops</div><div class="stat-value">${allD.length}</div></div><div class="stat-card"><div class="stat-label">Delivered</div><div class="stat-value" style="color:var(--teal)">${doneN}</div></div><div class="stat-card"><div class="stat-label">Remaining</div><div class="stat-value" style="color:var(--blue)">${allD.length-doneN}</div></div><div class="stat-card"><div class="stat-label">Total route</div><div class="stat-value">${totKm.toFixed(1)} km</div></div>`;
+  c.innerHTML=activeRoute.trips.map(trip=>{
+    let seq=0;
+    const rows=trip.stops.map(s=>{
+      if(s.type==='wh')return`<div class="mgr-stop-row wh-row"><div class="mgr-status" style="background:#EF9F27;color:white;font-size:12px">🏭</div><div style="flex:1"><strong style="font-size:13px">${esc(s.name)}</strong><div style="font-size:11px;color:var(--gray-text)">${esc(s.addr||'')}</div></div><div style="font-size:12px;font-weight:600;color:var(--amber)">${s.arriveTime}</div></div>`;
+      seq++;const done=prog[s.customer];const dt=done?new Date(prog[s.customer]).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}):'';
+      return`<div class="mgr-stop-row"><div class="mgr-status ${done?'ms-done':'ms-pending'}">${done?'✓':seq}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${esc(s.customer)}</div><div style="font-size:12px;color:var(--gray-text)">${esc((s.addr||'').substring(0,60))}</div><div style="margin-top:3px">${s.items.map(it=>`<span class="badge badge-blue" style="margin-right:3px">${esc(it.model)}</span>`).join('')}</div></div><div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:600;color:var(--teal)">${s.arriveTime}</div>${done?`<div style="font-size:11px;color:var(--green)">✅ ${dt}</div>${getDeliveryPhoto(s.customer)}<button class="btn btn-outline btn-sm" style="margin-top:4px;font-size:10px;padding:2px 7px" data-cust="${esc(s.customer)}" onclick="unmarkDeliveredFromBtn(this)" title="Use this only to correct a mistaken or stale 'delivered' mark">↩ Undo</button>`:`<span class="badge badge-gray">Pending</span>`}</div></div>`;
+    }).join('');
+    const ds=trip.stops.filter(s=>s.type==='delivery');const dn=ds.filter(s=>prog[s.customer]).length;const pct=ds.length?Math.round(dn/ds.length*100):0;
+    return`<div class="mgr-trip-card"><div class="mgr-trip-head"><div class="trip-num" style="background:var(--teal)">${trip.tripNum}</div><div style="flex:1"><div style="font-weight:600;font-size:14px">Trip ${trip.tripNum}</div><div style="font-size:12px;color:var(--gray-text)">Departs ${trip.depTime} · ${dn}/${ds.length} delivered · ~${trip.totalKm} km</div></div><div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--teal)">${pct}%</div></div></div><div class="progress-wrap" style="height:5px;border-radius:0"><div class="progress-fill prog-ok" style="width:${pct}%"></div></div>${rows}</div>`;
+  }).join('');
+}
+
+// ── FILE UPLOAD ──
+function handleDragOver(e){e.preventDefault();document.getElementById('upload-zone').classList.add('dragover');}
+function handleDrop(e){e.preventDefault();document.getElementById('upload-zone').classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)parseFile(f);}
+function handleFileUpload(e){const f=e.target.files[0];if(f)parseFile(f);}
+// ── Smart address cleaner for ORS geocoding ──
+function cleanForGeocode(raw, area, city, pin){
+  // Build a clean geocodable address from parts
+  // ORS works best with: street number + street name + area + city + pincode
+  // Common Frappe abbreviations that confuse geocoders
+  let addr = raw
+    .replace(/NR\.?/gi,'Near')
+    .replace(/OPP\.?/gi,'Opposite')
+    .replace(/BH\.?/gi,'Behind')
+    .replace(/SOC\.?/gi,'Society')
+    .replace(/APPT?\.?/gi,'Apartment')
+    .replace(/APTS?\.?/gi,'Apartments')
+    .replace(/CHS?\.?/gi,'')
+    .replace(/LTD\.?/gi,'')
+    .replace(/[A-Z]{2,}\/[A-Z]{2}/g,'') // remove /TL /HL suffixes
+    .replace(/\s{2,}/g,' ').trim();
+  // Compose: cleaned address + area + city + pin
+  const parts = [addr];
+  if(area && !addr.toUpperCase().includes(area.toUpperCase())) parts.push(area);
+  parts.push(city||'Ahmedabad');
+  if(pin) parts.push(pin);
+  return parts.filter(Boolean).join(', ');
+}
+
+function buildDeliveries(rows){
+  const map={};
+  rows.forEach(r=>{
+    const name=norm(r['Customer Name']||r['customer_name']||'');if(!name)return;
+    if(!map[name]){
+      const area=norm(r['Area']||r['area']||'');
+      const city=norm(r['City']||r['city']||'Ahmedabad');
+      const pin=norm(r['Pincode']||r['pincode']||'');
+      const raw=norm(r['Address']||r['address']||'');
+      // Clean address: remove common Frappe abbreviations that confuse geocoders
+      const cleanAddr=cleanForGeocode(raw,area,city,pin);
+      // Stop time from Excel (minutes per delivery at this stop)
+      const excelStop=parseFloat(r['Stop Time']||r['stop_time']||r['Delivery Time']||r['delivery_time']||0)||0;
+      map[name]={customer:name,phone:norm(r['Mobile#']||r['Mobile']||''),
+        address:cleanAddr,rawAddress:raw,area:area.toUpperCase(),city,pin,
+        lat:0,lng:0,geocoded:false,
+        invoice:norm(r['Invoice No']||r['invoice_no']||''),
+        source:'sarkhej',timeConstraint:null,
+        stopMin:excelStop>0?excelStop:null, // null = use global default
+        items:[]};
+    }
+    const model=norm(r['Model #']||r['Model']||'');const cat=norm(r['Category']||'').toUpperCase();
+    if(model){const info=lookupProduct(model,cat);map[name].items.push({model,cat:info.cat,vol:info.vol,floorNeeded:info.floorNeeded,missing:info.missing});}
+  });
+  S.deliveries=Object.values(map);
+  if(!S.deliveries.length){alert('No delivery rows found. Check column names.');return;}
+  geocodeAll();
+}
+
+// ── GEOCODING ──
+const GMAPS_KEY=(window.ADH_CONFIG||{}).GOOGLE_MAPS_KEY||'';
+let geocodeErrorLog=[]; // tracks why each address failed, for diagnostics
+
+async function geocodeAll(){
+  showSec('sec-geocoding');setStep(2);
+  geocodeErrorLog=[];
+  const list=document.getElementById('geocode-list');
+  list.innerHTML=S.deliveries.map((d,i)=>`<div class="geocode-row" id="gc-${i}"><div class="spinner" id="gc-sp-${i}"></div><div class="gc-name">${esc(d.customer)}</div><div id="gc-st-${i}" style="flex:1;color:var(--gray-text)">${esc(d.address.substring(0,55))}…</div></div>`).join('');
+  let firstErrorShown=false;
+  for(let i=0;i<S.deliveries.length;i++){
+    const d=S.deliveries[i];
+    const st=document.getElementById('gc-st-'+i);
+    const sp=document.getElementById('gc-sp-'+i);
+    try{
+      const q=encodeURIComponent(d.address+', Ahmedabad, Gujarat, India');
+      const url=`https://maps.googleapis.com/maps/api/geocode/json?address=${q}&region=in&bounds=22.7,72.0|23.5,73.2&key=${GMAPS_KEY}`;
+      const res=await fetch(url);
+      const j=await res.json();
+
+      if(j.status==='OK'&&j.results&&j.results.length){
+        const loc=j.results[0].geometry.location;
+        d.lat=loc.lat;d.lng=loc.lng;d.geocoded=true;d.geocodeQuality='exact';
+        d.formattedAddress=j.results[0].formatted_address;
+        st.innerHTML=`<span class="gc-done">✓ ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</span> <span style="color:var(--gray-text);font-size:11px">${esc(j.results[0].formatted_address.substring(0,45))}</span>`;
+      } else {
+        geocodeErrorLog.push({customer:d.customer,attempt1Status:j.status,attempt1Message:j.error_message,address:d.address});
+        const q2=encodeURIComponent((d.area||'')+', Ahmedabad, Gujarat, India');
+        const res2=await fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${q2}&region=in&key=${GMAPS_KEY}`);
+        const j2=await res2.json();
+        if(j2.status==='OK'&&j2.results&&j2.results.length){
+          const loc=j2.results[0].geometry.location;
+          d.lat=loc.lat;d.lng=loc.lng;d.geocoded=true;d.geocodeQuality='area';
+          st.innerHTML=`<span class="gc-done" style="color:var(--amber)">~ Area-level: ${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)} (full address not found)</span>`;
+        } else {
+          d.geocoded=false;d.geocodeQuality='failed';
+          geocodeErrorLog.push({customer:d.customer,attempt2Status:j2.status,attempt2Message:j2.error_message,area:d.area});
+          // Show the RAW Google status code directly on screen — no guessing
+          const rawMsg=j2.error_message?(' — '+j2.error_message):'';
+          st.innerHTML=`<span class="gc-fail">⚠ Google said: <strong>${esc(j2.status||'UNKNOWN')}</strong>${esc(rawMsg)}</span>`;
+          // Show a prominent one-time banner with the first real error so it's impossible to miss
+          if(!firstErrorShown && (j2.status==='REQUEST_DENIED'||j2.status==='OVER_QUERY_LIMIT'||j.status==='REQUEST_DENIED')){
+            firstErrorShown=true;
+            const bigWarn=document.createElement('div');
+            bigWarn.className='alert alert-danger';
+            bigWarn.style.marginTop='12px';
+            bigWarn.style.fontSize='13px';
+            const statusForMsg=j2.status==='REQUEST_DENIED'?j2:j;
+            bigWarn.innerHTML=`🛑 <strong>Google Maps is rejecting every request.</strong><br>Status: <strong>${esc(statusForMsg.status)}</strong>${statusForMsg.error_message?'<br>Google says: "'+esc(statusForMsg.error_message)+'"':''}<br><br>Most common causes:<br>1. Billing not enabled on the Google Cloud project<br>2. The API key's website restriction doesn't match this exact domain<br>3. Geocoding API not enabled for this project<br><br>Fix this in Google Cloud Console → APIs & Services, then come back and try again.`;
+            document.getElementById('geocode-list').appendChild(bigWarn);
+          }
+        }
+      }
+    }catch(e){
+      d.geocoded=false;d.geocodeQuality='failed';
+      geocodeErrorLog.push({customer:d.customer,error:e.message});
+      st.innerHTML=`<span class="gc-fail">⚠ Network error: ${esc(e.message)}</span>`;
+    }
+    if(sp)sp.style.display='none';
+    await new Promise(r=>setTimeout(r,100));
+  }
+  // Show a diagnostic summary if anything failed
+  if(geocodeErrorLog.length){
+    console.warn('Geocoding issues:',geocodeErrorLog);
+    const failCount=S.deliveries.filter(d=>!d.geocoded).length;
+    const areaCount=S.deliveries.filter(d=>d.geocodeQuality==='area').length;
+    if(failCount||areaCount){
+      const summaryDiv=document.createElement('div');
+      summaryDiv.className='alert alert-warning';
+      summaryDiv.style.marginTop='12px';
+      summaryDiv.innerHTML=`⚠ ${failCount} address(es) could not be geocoded at all, ${areaCount} matched only at area-level (not exact). Common causes: incomplete address, Google Maps billing not enabled, or address has typos. Check browser console for details.`;
+      document.getElementById('geocode-list').appendChild(summaryDiv);
+      await new Promise(r=>setTimeout(r,1500));
+    }
+  }
+  setTimeout(showReview,500);
+}
+function skipGeocode(){showReview();}
+
+// ── REVIEW ──
+function showReview(){showSec('sec-review');setStep(2);renderReview();}
+function renderReview(){
+  const maxVol=parseFloat(settings.vehVol||3.63),maxFloor=parseFloat(settings.vehFloor||2.79);
+  const d=S.deliveries,totalVol=d.reduce((s,c)=>s+itemsVol(c.items),0),totalFloor=d.reduce((s,c)=>s+itemsFloor(c.items),0),totalItems=d.reduce((s,c)=>s+c.items.length,0);
+  document.getElementById('review-stats').innerHTML=`<div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">${d.length}</div></div><div class="stat-card"><div class="stat-label">Items</div><div class="stat-value">${totalItems}</div></div><div class="stat-card"><div class="stat-label">Volume</div><div class="stat-value">${totalVol.toFixed(2)} m³</div><div class="stat-sub">of ${maxVol} m³</div></div><div class="stat-card"><div class="stat-label">Floor area</div><div class="stat-value">${totalFloor.toFixed(2)} m²</div><div class="stat-sub">of ${maxFloor} m²</div></div>`;
+  const al=[];
+  if(d.filter(c=>c.items.some(i=>i.missing)).length)al.push(`<div class="alert alert-warning">⚠ Some items have unknown dimensions — add them in Product Master for accuracy.</div>`);
+  // FIX: warn if any single customer's order alone exceeds vehicle capacity —
+  // this can't be fixed by trip-splitting since it's one indivisible delivery
+  const oversized=d.filter(c=>itemsVol(c.items)>maxVol||itemsFloor(c.items)>maxFloor);
+  if(oversized.length){
+    al.push(`<div class="alert alert-danger">🚛 <strong>${oversized.length} delivery(s) exceed full vehicle capacity alone:</strong> ${oversized.map(c=>esc(c.customer)).join(', ')}. These will not fit in a single tempo trip — consider splitting the order or using a larger vehicle for these customers.</div>`);
+  }
+  const exactCount=d.filter(c=>c.geocodeQuality==='exact').length;
+  const areaCount=d.filter(c=>c.geocodeQuality==='area').length;
+  const failCount=d.filter(c=>c.geocodeQuality==='failed'||!c.geocoded).length;
+  if(areaCount||failCount){
+    al.push(`<div class="alert alert-warning">📍 <strong>Address accuracy:</strong> ${exactCount} exact · ${areaCount} area-level only · ${failCount} failed. Hover the Geo badge in each row to see which. Area-level and failed addresses use approximate coordinates for distance calculation — actual driving distance may differ.</div>`);
+  }
+  // FIX: use the REAL packing result from splitTrips() instead of a theoretical
+  // volume/floor division. Customers can't be split mid-order, so the actual
+  // number of trips needed is often higher than total-volume ÷ vehicle-volume
+  // suggests (e.g. leftover space too small for the next whole customer).
+  const actualGroups=splitTrips(d,maxVol,maxFloor);
+  const trips=actualGroups.length;
+  if(trips>1)al.push(`<div class="alert alert-info">📦 Will need <strong>${trips} trips</strong> (based on how orders actually pack — whole customer orders can't be split across trips).</div>`);
+  document.getElementById('review-alerts').innerHTML=al.join('');
+  document.getElementById('review-tbody').innerHTML=d.map((c,i)=>{const vol=itemsVol(c.items);const gc=c.geocodeQuality==='exact'?`<span class="badge badge-teal" title="Exact address match">✓ Exact</span>`:c.geocodeQuality==='area'?`<span class="badge badge-amber" title="Only area-level match found — full address not recognised">~ Area</span>`:`<span class="badge badge-red" title="Could not geocode — using rough estimate">✗ Failed</span>`;const tc=c.timeConstraint?`<span class="badge badge-blue">${esc(fmtTc(c.timeConstraint))}</span>`:'<span style="color:var(--gray-text);font-size:12px">None</span>';const wb=c.source==='sarkhej'?'badge-amber':c.source==='both'?'badge-red':'badge-teal';const wl=c.source==='sarkhej'?'Sarkhej':c.source==='both'?'Both':'Shivranjani';const noteBadge=c.notes?`<span class="badge badge-amber" style="cursor:pointer;max-width:100px;overflow:hidden;text-overflow:ellipsis" onclick="editNote(${i})" title="${esc(c.notes)}">📝 ${esc(c.notes.substring(0,15))}${c.notes.length>15?'…':''}</span>`:`<button class="btn btn-outline btn-sm" onclick="editNote(${i})" style="font-size:11px">+ Note</button>`;
+return`<tr><td>${i+1}</td><td><strong>${esc(c.customer)}</strong>${c.phone?`<br><span style="font-size:11px;color:var(--gray-text)">${esc(c.phone)}</span>`:''}</td><td style="font-size:12px;max-width:140px">${esc(c.address)||'—'}</td><td>${c.items.map(it=>`<span class="badge badge-blue" style="margin:1px">${esc(it.model)}${it.missing?'⚠':''}</span>`).join('')}</td><td>${vol.toFixed(2)}</td><td><button class="btn btn-outline btn-sm" onclick="openWhModal(${i})"><span class="badge ${wb}">${wl}</span></button></td><td><button class="btn btn-outline btn-sm" onclick="openTcModal(${i})">${tc}</button></td><td>${noteBadge}</td><td>${gc}</td><td><button class="btn btn-danger btn-sm" onclick="removeDelivery(${i})">✕</button></td></tr>`;}).join('');
+  const vp=Math.min((totalVol/maxVol)*100,100),fp=Math.min((totalFloor/maxFloor)*100,100);
+  document.getElementById('vol-lbl').textContent=`${totalVol.toFixed(2)} / ${maxVol} m³`;document.getElementById('floor-lbl').textContent=`${totalFloor.toFixed(2)} / ${maxFloor} m²`;
+  const vb=document.getElementById('vol-bar');vb.style.width=vp+'%';vb.className='progress-fill '+(vp>100?'prog-over':vp>80?'prog-warn':'prog-ok');
+  const fb=document.getElementById('floor-bar');fb.style.width=fp+'%';fb.className='progress-fill '+(fp>100?'prog-over':fp>80?'prog-warn':'prog-ok');
+  document.getElementById('trip-split-msg').innerHTML=trips>1?`<div class="alert alert-info">Delivery will split into <strong>${trips} trips</strong>.</div>`:`<div class="alert alert-success">✓ Everything fits in one trip.</div>`;
+}
+function removeDelivery(i){if(!confirm('Remove?'))return;S.deliveries.splice(i,1);renderReview();}
+function goUpload(){showSec('sec-upload');setStep(1);}
+function goReview(){showSec('sec-review');setStep(2);renderReview();}
+
+// ── ROUTE PLANNING ──
+function getRS(){return{depTime:(document.getElementById('route-dep-time')||{value:''}).value||document.getElementById('dep-time').value||'11:30',endTime:(document.getElementById('route-end-time')||{value:''}).value||document.getElementById('end-time').value||'18:30',numTempos:parseInt((document.getElementById('route-tempos')||{value:'1'}).value||'1')};}
+async function planRoute(){
+  if(!S.deliveries.length){alert('No deliveries.');return;}
+  const dep=document.getElementById('dep-time').value||'11:30',end=document.getElementById('end-time').value||'18:30',nt=parseInt(document.getElementById('num-tempos').value)||1;
+  if(document.getElementById('route-dep-time'))document.getElementById('route-dep-time').value=dep;
+  if(document.getElementById('route-end-time'))document.getElementById('route-end-time').value=end;
+  if(document.getElementById('route-tempos'))document.getElementById('route-tempos').value=nt;
+  // FIX: this is the start of a BRAND NEW plan (fresh Upload → Review →
+  // "Plan Route"). Clear any route left in memory from earlier today — e.g.
+  // an in-progress test, or a route a manager previously opened on this
+  // device — so its leftover progress (like an old "delivered" tick for a
+  // customer who happens to be on today's list too) can never be silently
+  // inherited into this new plan when it's first saved. Adjusting an
+  // ALREADY-saved route's settings goes through replanRoute() instead,
+  // which does not touch activeRoute, so in-progress driver progress is
+  // never affected by this reset.
+  activeRoute=null;
+  await _build(dep,end,nt);
+}
+async function replanRoute(){const{depTime,endTime,numTempos}=getRS();await _build(depTime,endTime,numTempos);}
+
+async function _build(depTime,endTime,numTempos){
+  const maxVol=parseFloat(settings.vehVol||3.63),maxFloor=parseFloat(settings.vehFloor||2.79);
+  const stopMin=parseInt(document.getElementById('stop-min').value)||20;
+  const startWH=document.getElementById('start-wh').value;
+  const wh1=getWH1(),wh2=getWH2();
+  const groups=splitTrips(S.deliveries,maxVol,maxFloor);
+  let all=[];
+  if(numTempos===1){
+    groups.forEach((g,ti)=>{
+      const stops=optimise(g,pickStartCoord(g,startWH,wh1,wh2),wh1,wh2,startWH,depTime,stopMin);
+      all.push({tripNum:ti+1,tempo:1,stops,totalKm:0,totalMin:0,depTime:depTime,endTime:depTime,manualDepTime:false});
+    });
+  }else{
+    const half=Math.ceil(groups.length/2);
+    groups.slice(0,half).forEach((g,idx)=>{
+      const stops=optimise(g,pickStartCoord(g,startWH,wh1,wh2),wh1,wh2,startWH,depTime,stopMin);
+      all.push({tripNum:all.length+1,tempo:1,stops,totalKm:0,totalMin:0,depTime:depTime,endTime:depTime,manualDepTime:false});
+    });
+    groups.slice(half).forEach((g,idx)=>{
+      const stops=optimise(g,pickStartCoord(g,startWH,wh1,wh2),wh1,wh2,startWH,depTime,stopMin);
+      all.push({tripNum:all.length+1,tempo:2,stops,totalKm:0,totalMin:0,depTime:depTime,endTime:depTime,manualDepTime:false});
+    });
+  }
+  S.trips=all;
+  // FIX: clear any leftover per-trip undo history and the "already
+  // finished" flag from a previous route before building this new one.
+  dragUndoStacks={};
+  routeFinished=false;
+  // FIX 7: cascade departure times — each trip's start respects the previous
+  // trip's actual return-to-warehouse time (within the same tempo)
+  recomputeAllTripsCascading();
+  const latestEnd=Math.max(...all.map(t=>t2m(t.endTime)));
+  showSec('sec-route');setStep(3);
+  renderTrips(depTime,endTime,numTempos,latestEnd-t2m(endTime));
+  setTimeout(initPlanMap,200);
+}
+
+// Picks the correct starting warehouse coordinate, consistent with optimise()'s
+// own 'auto' handling — keeps both in sync so 'auto' means the same thing everywhere.
+function pickStartCoord(group,startWH,wh1,wh2){
+  if(startWH==='sarkhej')return wh2;
+  if(startWH==='shivranjani')return wh1;
+  // auto: match whatever the first delivery in this group actually needs
+  if(group&&group.length&&group[0].source==='sarkhej')return wh2;
+  return wh1;
+}
+
+function splitTrips(deliveries,maxVol,maxFloor){
+  const sorted=[...deliveries].sort((a,b)=>{const aB=a.timeConstraint&&a.timeConstraint.type==='before'?t2m(a.timeConstraint.t1):9999;const bB=b.timeConstraint&&b.timeConstraint.type==='before'?t2m(b.timeConstraint.t1):9999;return aB-bB;});
+  const trips=[];let cur=[],cv=0,cf=0;
+  // FIX: flag any single delivery that alone exceeds vehicle capacity — previously
+  // this was silently packed into a trip with no warning, risking a vehicle that
+  // physically cannot carry what the plan says it can.
+  window.oversizedDeliveries=[];
+  sorted.forEach(d=>{
+    const v=itemsVol(d.items),f=itemsFloor(d.items);
+    if(v>maxVol||f>maxFloor)window.oversizedDeliveries.push(d.customer);
+    if(cur.length&&(cv+v>maxVol||cf+f>maxFloor)){trips.push(cur);cur=[];cv=0;cf=0;}
+    cur.push(d);cv+=v;cf+=f;
+  });
+  if(cur.length)trips.push(cur);return trips;
+}
+
+function optimise(deliveries,startCoord,wh1,wh2,startWHPref,depTime,stopMin){
+  const stops=[];let pos=startCoord;let curMin=t2m(depTime);
+  // FIX: 'auto' previously silently behaved like 'shivranjani'. Now it
+  // genuinely checks which warehouse the FIRST delivery's source actually
+  // requires, so 'auto' reflects the deliveries rather than ignoring them.
+  let effectivePref=startWHPref;
+  if(startWHPref==='auto'&&deliveries.length){
+    const firstSource=deliveries[0].source;
+    effectivePref=firstSource==='sarkhej'?'sarkhej':'shivranjani';
+  }
+  let loaded={wh1:effectivePref!=='sarkhej',wh2:effectivePref==='sarkhej'};
+  stops.push({type:'wh',name:startCoord.name,addr:startCoord.addr||startCoord.address||'',lat:startCoord.lat,lng:startCoord.lng,arriveTime:m2t(curMin),distKm:0,travelMin:0});
+  let remaining=[...deliveries];
+  while(remaining.length){
+    let best=null,bestIdx=-1,bestScore=Infinity;
+    remaining.forEach((d,i)=>{
+      const can=(d.source==='shivranjani'&&loaded.wh1)||(d.source==='sarkhej'&&loaded.wh2)||(d.source==='both'&&loaded.wh1&&loaded.wh2);if(!can)return;
+      const[dLat,dLng]=validCoord(d.lat,d.lng)?[d.lat,d.lng]:areaCoords(d);
+      const dist=getDist(pos.lat,pos.lng,dLat,dLng);let score=dist;
+      if(d.timeConstraint&&d.timeConstraint.type==='before'&&curMin+(dist/25)*60+stopMin>t2m(d.timeConstraint.t1))score+=500;
+      if(score<bestScore){bestScore=score;best=d;bestIdx=i;}
+    });
+    if(!best){
+      const n2=remaining.some(d=>(d.source==='sarkhej'||d.source==='both')&&!loaded.wh2);
+      const n1=remaining.some(d=>(d.source==='shivranjani'||d.source==='both')&&!loaded.wh1);
+      if(n2&&!loaded.wh2){const dist=getDist(pos.lat,pos.lng,wh2.lat,wh2.lng);const tm=Math.round(dist/25*60);curMin+=tm;stops.push({type:'wh',name:wh2.name,addr:wh2.addr||'',lat:wh2.lat,lng:wh2.lng,arriveTime:m2t(curMin),distKm:parseFloat(dist.toFixed(1)),travelMin:tm});pos=wh2;loaded.wh2=true;}
+      else if(n1&&!loaded.wh1){const dist=getDist(pos.lat,pos.lng,wh1.lat,wh1.lng);const tm=Math.round(dist/25*60);curMin+=tm;stops.push({type:'wh',name:wh1.name,addr:wh1.addr||'',lat:wh1.lat,lng:wh1.lng,arriveTime:m2t(curMin),distKm:parseFloat(dist.toFixed(1)),travelMin:tm});pos=wh1;loaded.wh1=true;}
+      else break;
+      continue;
+    }
+    remaining.splice(bestIdx,1);
+    const[dLat,dLng]=validCoord(best.lat,best.lng)?[best.lat,best.lng]:areaCoords(best);
+    const dist=getDist(pos.lat,pos.lng,dLat,dLng);const tm=Math.round(dist/25*60);curMin+=tm;const usedStop=best.stopMin||stopMin;const arriveTime=m2t(curMin);curMin+=usedStop;
+    let warn=null;if(best.timeConstraint){const tc=best.timeConstraint,am=t2m(arriveTime);if(tc.type==='before'&&am>t2m(tc.t1))warn=`⚠ Arrives ${arriveTime} — deadline ${tc.t1}`;if(tc.type==='after'&&am<t2m(tc.t1))warn=`ℹ Arrives ${arriveTime} — available from ${tc.t1}`;if(tc.type==='between'&&(am<t2m(tc.t1)||am>t2m(tc.t2)))warn=`⚠ Arrives ${arriveTime} — window ${tc.t1}–${tc.t2}`;}
+    const usedStopMin=best.stopMin||stopMin;stops.push({type:'delivery',customer:best.customer,addr:best.address,phone:best.phone,lat:dLat,lng:dLng,items:best.items,invoice:best.invoice,arriveTime,distKm:parseFloat(dist.toFixed(1)),travelMin:tm,stopMin:usedStopMin,area:best.area||'',timeConstraint:best.timeConstraint,warn,navUrl:`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(best.address||dLat+','+dLng)}&travelmode=driving`});
+    pos={lat:dLat,lng:dLng};
+  }
+  return stops;
+}
+
+// ── DISTANCE HELPERS ──
+const AHM={latMin:22.7,latMax:23.5,lngMin:72.0,lngMax:73.2};
+function validCoord(lat,lng){return typeof lat==='number'&&typeof lng==='number'&&!isNaN(lat)&&!isNaN(lng)&&lat!==0&&lng!==0&&lat>=AHM.latMin&&lat<=AHM.latMax&&lng>=AHM.lngMin&&lng<=AHM.lngMax;}
+// Returns best available coords for a stop — geocoded if available, else area fallback
+function stopCoords(s){
+  if(validCoord(s.lat,s.lng))return[s.lat,s.lng];
+  if(s.area||s.address)return areaCoords({area:s.area||'',address:s.address||s.addr||''});
+  return null;
+}
+function getDist(lat1,lng1,lat2,lng2){if(!validCoord(lat1,lng1)||!validCoord(lat2,lng2))return 8;const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLon=(lng2-lng1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;const straight=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));const road=straight*1.6;if(road>60)return 8;return Math.max(road,0.5);}
+const AC={'VASTRAPUR':[23.0461,72.5293],'BODAKDEV':[23.0428,72.5089],'SATELLITE':[23.0295,72.5182],'BOPAL':[23.0193,72.4682],'SHELA':[23.0107,72.4633],'MEMNAGAR':[23.0658,72.5427],'AMBAWADI':[23.0228,72.5514],'NAVRANGPURA':[23.0339,72.5615],'PALDI':[23.0127,72.5803],'MANINAGAR':[22.9956,72.6020],'GOTA':[23.0850,72.5292],'NARANPURA':[23.0600,72.5500],'THALTEJ':[23.0560,72.5033],'CHANDKHEDA':[23.1100,72.5900],'PRAHLAD NAGAR':[23.0090,72.5100],'SOUTH BOPAL':[23.0189,72.4685],'VEJALPUR':[23.0010,72.5340],'GHATLODIYA':[23.0750,72.5330],'GURUKUL':[23.0580,72.5360]};
+function areaCoords(d){const a=(d.area||'').toUpperCase();if(AC[a])return AC[a];const addr=(d.address||'').toUpperCase();for(const k of Object.keys(AC)){if(addr.includes(k))return AC[k];}return[23.0225,72.5714];}
+
+// ── RENDER TRIPS ──
+function renderTrips(depTime,endTime,numTempos,overtimeMin){
+  const c=document.getElementById('trips-container');if(!S.trips.length){c.innerHTML='';return;}
+  const totKm=S.trips.reduce((s,t)=>s+t.totalKm,0);
+  const latestEnd=S.trips.reduce((max,t)=>t2m(t.endTime)>t2m(max)?t.endTime:max,'00:00');
+  document.getElementById('route-sub').textContent=`${S.trips.length} trip(s) · ${numTempos>1?'2 tempos · ':''}~${totKm.toFixed(1)} km total · ends ~${latestEnd}`;
+  const banner=document.getElementById('overtime-banner');
+  if(overtimeMin>0){const h=Math.floor(overtimeMin/60),m=overtimeMin%60;banner.style.display='flex';banner.innerHTML=`<span class="badge badge-amber">⏰ Over cutoff by ${h>0?h+'h ':''} ${m}m</span>`;}else{banner.style.display='none';}
+  // FIX 4: per-trip undo buttons are rendered inside each trip's own header
+  // (see trip card markup below) rather than one button shared across the
+  // whole route — keeps an undo scoped to the trip it actually affects.
+
+  // FIX 6: sequential numbering across the ENTIRE route (not reset per trip)
+  let globalSeq=0;
+
+  const byT={};S.trips.forEach(t=>{if(!byT[t.tempo])byT[t.tempo]=[];byT[t.tempo].push(t);});
+  let html='';
+  Object.keys(byT).sort().forEach(tempo=>{
+    const trips=byT[tempo];const tempoEnd=trips.reduce((max,t)=>t2m(t.endTime)>t2m(max)?t.endTime:max,'00:00');
+    if(numTempos>1){const col=tempo==1?'var(--blue)':'var(--teal)';html+=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><div style="height:3px;flex:1;background:${col}"></div><span style="font-size:12px;font-weight:700;color:${col}">TEMPO ${tempo}</span><span style="font-size:12px;color:var(--gray-text)">ends ~${tempoEnd}</span><div style="height:3px;flex:1;background:${col}"></div></div>`;}
+    trips.forEach(trip=>{
+      const ds=trip.stops.filter(s=>s.type==='delivery');const late=t2m(trip.endTime)>t2m(endTime||'18:30');
+      const hdr=numTempos>1?(tempo==1?'var(--blue-light)':'var(--teal-light)'):'var(--blue-light)';const nc=numTempos>1?(tempo==1?'var(--blue)':'var(--teal)'):'var(--blue)';
+      // Per-trip volume and floor calculation
+      const tripVol=trip.stops.filter(s=>s.type==='delivery').reduce((sum,s)=>sum+s.items.reduce((ss,it)=>ss+it.vol,0),0);
+      const tripFloor=trip.stops.filter(s=>s.type==='delivery').reduce((sum,s)=>sum+itemsFloor(s.items),0);
+      const maxVol2=parseFloat(settings.vehVol||3.63),maxFloor2=parseFloat(settings.vehFloor||2.79);
+      const vPct=Math.min(tripVol/maxVol2*100,100),fPct=Math.min(tripFloor/maxFloor2*100,100);
+      const vCol=vPct>90?'var(--red)':vPct>75?'var(--amber-mid)':'var(--teal-mid)';
+      const fCol=fPct>90?'var(--red)':fPct>75?'var(--amber-mid)':'var(--teal-mid)';
+      const ti2=S.trips.indexOf(trip);
+      const retTime=trip.returnToWHTime||trip.endTime;
+      const retM=trip.returnMin||0;
+      const retD=trip.returnDist||0;
+      html+=`<div class="trip-section" id="trip-card-${ti2}"><div class="trip-header" style="background:${hdr};flex-wrap:wrap">
+        <div class="trip-num" style="background:${nc}">${trip.tripNum}</div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-weight:600;font-size:14px">Trip ${trip.tripNum}${numTempos>1?' · Tempo '+tempo:''}</div>
+          <div style="font-size:12px;color:var(--gray-text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:3px">
+            <span>Departs</span>
+            <input type="time" value="${trip.depTime}" onchange="setTripDepTime(${ti2},this.value)"
+              style="width:90px;padding:3px 6px;font-size:12px;border-radius:5px;border:1px solid var(--gray-border)"
+              title="Set departure time for this specific trip">
+            ${trip.manualDepTime?'<span class="badge badge-blue" style="font-size:9px">manual</span>':''}
+            <span>· ${ds.length} customers · ~${trip.totalKm} km · ends ~${trip.endTime}</span>
+            ${late?' <span style="color:var(--amber);font-weight:600">⚠ Over cutoff</span>':''}
+          </div>
+          <div style="font-size:12px;color:var(--amber);font-weight:600;margin-top:3px">
+            🏁 back at Sarkhej WH ~${retTime} (+${retM}min, ${retD}km from last stop)
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-outline btn-sm" id="undo-trip-btn-${ti2}" style="display:none" onclick="undoTripDrag(${ti2})" title="Undo the last move in this trip">↩ Undo</button>
+          <button class="btn btn-outline btn-sm" onclick="openMapForTrip(${ti2})">🗺 Maps</button>
+          <button class="btn btn-success btn-sm" onclick="saveSingleTrip(${ti2})" id="save-trip-btn-${ti2}">✅ Save Trip</button>
+        </div>
+      </div>
+      <div style="padding:10px 16px;background:#F8F7F4;border-bottom:1px solid var(--gray-border);display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Volume loaded</span><strong>${tripVol.toFixed(2)} / ${maxVol2} m³</strong></div>
+          <div style="background:var(--gray-border);border-radius:20px;height:7px;overflow:hidden"><div style="height:100%;border-radius:20px;background:${vCol};width:${vPct}%"></div></div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span>Floor area used</span><strong>${tripFloor.toFixed(2)} / ${maxFloor2} m²</strong></div>
+          <div style="background:var(--gray-border);border-radius:20px;height:7px;overflow:hidden"><div style="height:100%;border-radius:20px;background:${fCol};width:${fPct}%"></div></div>
+        </div>
+      </div>
+      <div id="trip-stops-${ti2}" class="trip-stops-container">${renderTripStops(trip,ti2,globalSeq)}</div>
+      </div>`;
+      globalSeq+=ds.length; // carry the running count to the next trip
+    });
+    if(numTempos>1)html+='<div style="margin-bottom:16px"></div>';
+  });
+  c.innerHTML=html;
+  updateAllUndoButtons();
+}
+function renderStop(s,si){
+  if(s.type==='wh')return`<div class="stop-row wh-row"><div class="stop-seq" style="background:var(--amber-light);border-color:var(--amber-mid);color:var(--amber)">🏭</div><div style="flex:1"><div class="stop-name">${esc(s.name)}</div><div class="stop-address">${esc(s.addr||'')}</div><div class="stop-tags">${si===0?'<span class="badge badge-teal">Start here — load items</span>':`<span class="badge badge-amber">Pickup · +${s.travelMin}min · ${s.distKm}km</span>`}</div></div><div class="stop-eta"><div class="stop-time">${s.arriveTime}</div></div></div>`;
+  return`<div class="stop-row"><div class="stop-seq">${si}</div><div style="flex:1"><div class="stop-name">${esc(s.customer)}${s.phone?`<span style="font-weight:400;font-size:12px;color:var(--gray-text)"> · ${esc(s.phone)}</span>`:''}</div><div class="stop-address">${esc(s.addr||'—')}</div><div class="stop-items">${s.items.map(it=>esc(it.model)).join(' · ')}</div>${s.warn?`<div style="margin-top:4px"><span class="badge badge-amber">${esc(s.warn)}</span></div>`:''}<div class="stop-tags">${s.timeConstraint&&s.timeConstraint.type!=='none'?`<span class="badge badge-blue">${esc(fmtTc(s.timeConstraint))}</span>`:''}<span class="badge badge-gray">+${s.travelMin}min · ${s.distKm}km</span>${s.invoice?`<span class="badge badge-gray">Inv: ${esc(s.invoice)}</span>`:''}</div></div><div class="stop-eta"><div class="stop-time">${s.arriveTime}</div><a href="${s.navUrl}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none">📍 Nav</a></div></div>`;
+}
+function openMapForTrip(ti){const trip=S.trips[ti];const ds=trip.stops.filter(s=>s.type==='delivery');if(!ds.length)return;const dest=encodeURIComponent(ds[ds.length-1].addr||`${ds[ds.length-1].lat},${ds[ds.length-1].lng}`);const origin=encodeURIComponent(trip.stops[0].addr||`${trip.stops[0].lat},${trip.stops[0].lng}`);const wpts=ds.slice(0,-1).map(s=>encodeURIComponent(s.addr||`${s.lat},${s.lng}`)).join('|');let url=`https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travelmode=driving`;if(wpts)url+=`&waypoints=${wpts}`;window.open(url,'_blank');}
+
+// ══════════════════════════════════════════════════════════
+// SUPABASE — cloud sync so manager PC and driver Android
+// stay connected in real time over the internet
+// ══════════════════════════════════════════════════════════
+const SB_URL  = (window.ADH_CONFIG||{}).SUPABASE_URL||'';
+const SB_KEY  = (window.ADH_CONFIG||{}).SUPABASE_ANON_KEY||'';
+const SB_HDR  = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
+
+// FIX: India-correct 'today' helper. toISOString() converts to UTC, which
+// rolls over to the next/previous calendar day during 12:00am-5:30am IST —
+// this caused 'today's route' lookups to silently fail or grab the wrong day
+// in the early morning. This computes the date using IST (UTC+5:30) directly.
+function todayIST(){
+  const now=new Date();
+  const istOffsetMs=5.5*60*60*1000;
+  const ist=new Date(now.getTime()+istOffsetMs);
+  return ist.toISOString().split('T')[0];
+}
+
+// Show a small sync status badge in the header
+let syncStatus='idle'; // idle | saving | saved | error | loading
+function setSyncStatus(s,msg){
+  syncStatus=s;
+  let el=document.getElementById('sync-badge');
+  if(!el){el=document.createElement('div');el.id='sync-badge';el.style.cssText='font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;flex-shrink:0';document.querySelector('.header-right').prepend(el);}
+  const map={idle:['',''],saving:['⏳ Saving…','background:#FEF3E2;color:#B45309'],saved:['☁️ Synced','background:#E1F5EE;color:#0F6E56'],error:['⚠ Offline','background:#FCEBEB;color:#A32D2D'],loading:['⏳ Loading…','background:#E6F1FB;color:#185FA5']};
+  const[text,style]=map[s]||['',''];el.textContent=msg||text;el.style.cssText='font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;flex-shrink:0;'+style;
+}
+
+// ── Supabase REST helpers ──
+async function sbGet(table,filter=''){
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/${table}?${filter}&order=created_at.desc&limit=1`,{headers:SB_HDR});
+    if(!res.ok)return null;
+    const rows=await res.json();
+    return rows&&rows.length?rows[0]:null;
+  }catch(e){return null;}
+}
+async function sbUpsert(table,data){
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/${table}`,{method:'POST',headers:{...SB_HDR,'Prefer':'resolution=merge-duplicates'},body:JSON.stringify(data)});
+    return res.ok;
+  }catch(e){return false;}
+}
+async function sbPatch(table,id,data){
+  try{
+    const res=await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`,{method:'PATCH',headers:{...SB_HDR,'Prefer':'return=minimal'},body:JSON.stringify(data)});
+    return res.ok;
+  }catch(e){return false;}
+}
+
+// ── Save today's route to Supabase ──
+// CRITICAL FIX: only resets progress to {} on the VERY FIRST save of the day.
+// Any subsequent save (e.g. saving Trip 2 after the driver already delivered
+// Trip 1 stops) must preserve whatever progress already exists in the cloud,
+// otherwise it silently erases the driver's completed deliveries.
+async function saveRouteToCloud(trips,date,existingId){
+  setSyncStatus('saving');
+  let progressToSend='{}';
+  if(existingId){
+    // Fetch the current progress first so we don't overwrite it
+    const existing=await sbGet('routes',`id=eq.${existingId}`);
+    if(existing&&existing.progress){
+      progressToSend=typeof existing.progress==='string'?existing.progress:JSON.stringify(existing.progress);
+    }
+  }
+  const payload={date,trips:JSON.stringify(trips),progress:progressToSend,updated_at:new Date().toISOString()};
+  if(existingId)payload.id=existingId;
+  const ok=await sbUpsert('routes',payload);
+  if(ok){setSyncStatus('saved');setTimeout(()=>setSyncStatus('idle'),3000);return true;}
+  setSyncStatus('error','⚠ Save failed — check internet');return false;
+}
+
+// ── Load today's active route from Supabase ──
+async function loadRouteFromCloud(){
+  setSyncStatus('loading');
+  const today=todayIST();
+  const row=await sbGet('routes',`date=eq.${today}`);
+  setSyncStatus('idle');
+  if(!row)return null;
+  try{
+    const trips=typeof row.trips==='string'?JSON.parse(row.trips):row.trips;
+    const progress=typeof row.progress==='string'?JSON.parse(row.progress):row.progress;
+    return{id:row.id,date:row.date,trips,progress:progress||{}};
+  }catch(e){return null;}
+}
+
+// ── Mark a delivery done in Supabase ──
+async function markDeliveredInCloud(routeId,progress){
+  setSyncStatus('saving');
+  const ok=await sbPatch('routes',routeId,{progress:JSON.stringify(progress),updated_at:new Date().toISOString()});
+  if(ok){setSyncStatus('saved');setTimeout(()=>setSyncStatus('idle'),2000);}
+  else setSyncStatus('error','⚠ Sync failed');
+}
+
+// Lets the manager correct a delivery that's wrongly showing as done — e.g.
+// a stale mark carried over from an earlier test, or a mistaken tap by the
+// driver. Removes that one customer's progress entry only; everything else
+// is untouched.
+function unmarkDeliveredFromBtn(btn){unmarkDelivered(btn.dataset.cust);}
+async function unmarkDelivered(customer){
+  if(!activeRoute||!activeRoute.progress||!activeRoute.progress[customer])return;
+  if(!confirm(`Mark "${customer}" as NOT delivered? Only do this to correct a mistaken or stale tick.`))return;
+  delete activeRoute.progress[customer];
+  if(activeRoute.photos)delete activeRoute.photos[customer];
+  saveActiveRoute(activeRoute);
+  if(activeRoute.id)await markDeliveredInCloud(activeRoute.id,activeRoute.progress);
+  renderManagerTrack();
+  if(mgrMap)initMgrMap();
+  if(planMap&&S.trips.length)initPlanMap();
+}
+
+// ── Real-time polling — manager sees driver progress live ──
+let pollInterval=null;
+function startPolling(){
+  stopPolling();
+  pollInterval=setInterval(async()=>{
+    if(APP.role!=='manager')return;
+    // FIX: while a brand-new plan has been built (S.trips populated) but
+    // NOT a single trip has been saved yet, don't let this background poll
+    // pull in whatever route currently exists in the cloud for today and
+    // overwrite activeRoute with it — that's exactly how an old/stale
+    // "delivered" progress entry could leak into a plan that hasn't even
+    // been saved yet. Once at least one trip is saved, the cloud row is
+    // guaranteed to be THIS plan's own row, so polling is safe again.
+    if(S.trips.length&&!S.trips.some(t=>t.frozen))return;
+    const fresh=await loadRouteFromCloud();
+    if(!fresh)return;
+    // Only re-render if progress changed
+    const oldProg=JSON.stringify(activeRoute&&activeRoute.progress||{});
+    const newProg=JSON.stringify(fresh.progress||{});
+    if(oldProg!==newProg){
+      activeRoute=fresh;
+      saveActiveRoute(activeRoute);
+      // Refresh tracking page if it's visible
+      const trackPage=document.getElementById('page-track');
+      if(trackPage&&trackPage.classList.contains('active')){renderManagerTrack();if(mgrMap)setTimeout(initMgrMap,100);}
+      // Refresh plan map markers too
+      if(planMap&&S.trips.length)setTimeout(initPlanMap,100);
+    }
+  },8000); // poll every 8 seconds
+}
+function stopPolling(){if(pollInterval){clearInterval(pollInterval);pollInterval=null;}}
+
+// ── SAVE ROUTE ──
+async function saveRoute(){
+  const date=document.getElementById('dep-date').value,km=S.trips.reduce((s,t)=>s+t.totalKm,0),min=S.trips.reduce((s,t)=>s+t.totalMin,0);
+  history.unshift({date,customers:S.deliveries.length,items:S.deliveries.reduce((s,d)=>s+d.items.length,0),trips:S.trips.length,km:parseFloat(km.toFixed(1)),minutes:min});
+  saveHistory(history);
+  activeRoute={trips:S.trips,date,progress:{}};
+  saveActiveRoute(activeRoute);
+  const ok=await saveRouteToCloud(S.trips,date,null);
+  if(ok){const fresh=await loadRouteFromCloud();if(fresh){activeRoute=fresh;saveActiveRoute(activeRoute);}}
+  showSec('sec-done');setStep(4);
+}
+function resetAll(){S.deliveries=[];S.trips=[];dragUndoStacks={};routeFinished=false;document.getElementById('file-input').value='';showSec('sec-upload');setStep(1);}
+function processUpload(){if(!S.deliveries.length){alert('Upload a file or load sample data first.');return;}geocodeAll();}
+
+// ── WHATSAPP ──
+function openWhatsApp(){
+  const biz=settings.bizName||'Alpha Digital Home';const date=document.getElementById('dep-date').value;const dateStr=new Date(date).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});const nt=[...new Set(S.trips.map(t=>t.tempo))].length;
+  let msg=`*${biz} — Delivery Plan*\n📅 ${dateStr}\n\n`;const byT={};S.trips.forEach(t=>{if(!byT[t.tempo])byT[t.tempo]=[];byT[t.tempo].push(t);});
+  Object.keys(byT).sort().forEach(tempo=>{if(nt>1)msg+=`*══ TEMPO ${tempo} ══*\n`;byT[tempo].forEach(trip=>{msg+=`*── Trip ${trip.tripNum} ──*\n🕐 Departs: ${trip.depTime} · Ends ~${trip.endTime}\n`;let n=0;trip.stops.forEach(s=>{if(s.type==='wh'){msg+=`\n🏭 *Load: ${s.name}*\n`;return;}n++;msg+=`\n*${n}. ${s.customer}*\n   📍 ${s.addr||'—'}\n   🕐 ETA: ${s.arriveTime}`;if(s.timeConstraint&&s.timeConstraint.type!=='none')msg+=` (${fmtTc(s.timeConstraint)})`;msg+=`\n   📦 ${s.items.map(i=>i.model).join(', ')}\n`;if(s.phone)msg+=`   📞 ${s.phone}\n`;if(s.invoice)msg+=`   🧾 ${s.invoice}\n`;if(s.warn)msg+=`   ⚠ ${s.warn}\n`;});msg+=`\n📊 ~${trip.totalKm} km\n\n`;});});
+  document.getElementById('wa-content').textContent=msg;document.getElementById('modal-wa').style.display='flex';
+}
+function copyWA(){const t=document.getElementById('wa-content').textContent;navigator.clipboard.writeText(t).then(()=>alert('Copied!')).catch(()=>{const el=document.createElement('textarea');el.value=t;document.body.appendChild(el);el.select();document.execCommand('copy');document.body.removeChild(el);alert('Copied!');});}
+function sendWA(){window.open('https://wa.me/?text='+encodeURIComponent(document.getElementById('wa-content').textContent),'_blank');}
+
+// ── TC / WH MODALS ──
+function openTcModal(i){S.tcIdx=i;const d=S.deliveries[i];document.getElementById('tc-cust-name').textContent=d.customer;const tc=d.timeConstraint||{type:'none'};document.getElementById('tc-type').value=tc.type||'none';document.getElementById('tc-t1').value=tc.t1||'';document.getElementById('tc-t2').value=tc.t2||'';tcTypeChange();document.getElementById('modal-tc').style.display='flex';}
+function tcTypeChange(){const t=document.getElementById('tc-type').value;document.getElementById('tc-fields').style.display=t==='none'?'none':'block';document.getElementById('tc-lbl1').textContent=t==='before'?'Before':t==='after'?'After':'From';document.getElementById('tc-t2-wrap').style.display=t==='between'?'block':'none';}
+function saveTc(){const t=document.getElementById('tc-type').value;S.deliveries[S.tcIdx].timeConstraint=t==='none'?null:{type:t,t1:document.getElementById('tc-t1').value,t2:document.getElementById('tc-t2').value};closeModal('modal-tc');renderReview();}
+function openWhModal(i){S.whIdx=i;const d=S.deliveries[i];document.getElementById('wh-cust-name').textContent=d.customer;document.getElementById('wh-select').value=d.source||'shivranjani';document.getElementById('modal-wh').style.display='flex';}
+function saveWh(){S.deliveries[S.whIdx].source=document.getElementById('wh-select').value;closeModal('modal-wh');renderReview();}
+function openAddModal(){['ad-name','ad-phone','ad-addr','ad-models','ad-inv'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal-add').style.display='flex';}
+function saveAddDelivery(){const name=document.getElementById('ad-name').value.trim();if(!name){alert('Enter name.');return;}const models=document.getElementById('ad-models').value.split(',').map(m=>m.trim()).filter(Boolean);S.deliveries.push({customer:name,phone:document.getElementById('ad-phone').value,address:document.getElementById('ad-addr').value,lat:0,lng:0,geocoded:false,invoice:document.getElementById('ad-inv').value,source:document.getElementById('ad-wh').value,timeConstraint:null,items:models.map(m=>{const info=lookupProduct(m,'');return{model:m,cat:info.cat,vol:info.vol,floorNeeded:info.floorNeeded,missing:info.missing};})});closeModal('modal-add');renderReview();}
+
+// ── PRODUCT MASTER ──
+function renderMaster(){const q=(document.getElementById('master-search')?.value||'').toLowerCase();const list=q?products.filter(p=>p.prefix.toLowerCase().includes(q)||p.cat.toLowerCase().includes(q)):products;document.getElementById('master-tbody').innerHTML=list.map(p=>{const idx=products.indexOf(p);return`<tr><td><strong>${esc(p.prefix)}</strong></td><td><span class="badge badge-gray">${esc(p.cat)}</span></td><td style="font-size:12px">${p.l}×${p.w}×${p.h}</td><td>${p.vol.toFixed(3)}</td><td>${(p.floorArea||0).toFixed(3)}</td><td>${p.floorNeeded?'<span class="badge badge-red">Yes</span>':'<span class="badge badge-green">No</span>'}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="openProdModal(${idx})">Edit</button> <button class="btn btn-danger btn-sm" onclick="deleteProd(${idx})">✕</button></td></tr>`;}).join('');}
+function openProdModal(idx){S.prodIdx=idx;const e=idx!==null;document.getElementById('prod-modal-title').textContent=e?'Edit product':'Add product';if(e){const p=products[idx];document.getElementById('pm-prefix').value=p.prefix;document.getElementById('pm-cat').value=p.cat;document.getElementById('pm-l').value=p.l;document.getElementById('pm-w').value=p.w;document.getElementById('pm-h').value=p.h;document.getElementById('pm-wt').value=p.wt||'';document.getElementById('pm-floor').value=p.floorNeeded?'yes':'no';}else{['pm-prefix','pm-l','pm-w','pm-h','pm-wt'].forEach(id=>document.getElementById(id).value='');document.getElementById('pm-cat').value='REFRIGERATOR';document.getElementById('pm-floor').value='yes';}prodVolPreview();document.getElementById('modal-prod').style.display='flex';}
+function prodVolPreview(){const l=parseFloat(document.getElementById('pm-l').value)||0,w=parseFloat(document.getElementById('pm-w').value)||0,h=parseFloat(document.getElementById('pm-h').value)||0;document.getElementById('pm-vol-preview').textContent=(l&&w&&h)?`Volume: ${(l*w*h/1e6).toFixed(4)} m³ · Floor: ${(l*w/1e4).toFixed(4)} m²`:'';}
+function saveProd(){const prefix=document.getElementById('pm-prefix').value.trim();if(!prefix){alert('Enter prefix.');return;}const l=parseFloat(document.getElementById('pm-l').value)||0,w=parseFloat(document.getElementById('pm-w').value)||0,h=parseFloat(document.getElementById('pm-h').value)||0;const p={prefix,cat:document.getElementById('pm-cat').value,l,w,h,wt:parseFloat(document.getElementById('pm-wt').value)||0,vol:parseFloat((l*w*h/1e6).toFixed(5)),floorArea:parseFloat((l*w/1e4).toFixed(5)),floorNeeded:document.getElementById('pm-floor').value==='yes'};if(S.prodIdx!==null)products[S.prodIdx]=p;else products.push(p);saveProducts(products);renderMaster();closeModal('modal-prod');}
+function deleteProd(i){if(!confirm('Delete?'))return;products.splice(i,1);saveProducts(products);renderMaster();}
+function lookupProduct(model,catHint){
+  const m=model.toUpperCase();
+  // FIX: only match by startsWith (model codes always begin with their prefix).
+  // The old .includes() fallback could misfire if a short prefix like 'AR'
+  // happened to appear as a substring anywhere inside an unrelated model code.
+  // Prefer the LONGEST matching prefix so e.g. 'RT80H51' beats a shorter 'RT' if both existed.
+  let bestMatch=null;
+  for(const p of products){
+    if(m.startsWith(p.prefix.toUpperCase())){
+      if(!bestMatch||p.prefix.length>bestMatch.prefix.length)bestMatch=p;
+    }
+  }
+  if(bestMatch)return{cat:bestMatch.cat,vol:bestMatch.vol,floorNeeded:bestMatch.floorNeeded,missing:false};
+  const c=(catHint||'').toUpperCase();
+  if(c.includes('REFRIG'))return{cat:'REFRIGERATOR',vol:0.50,floorNeeded:true,missing:true};
+  if(c.includes('WASHING'))return{cat:'WASHING MACHINE',vol:0.30,floorNeeded:true,missing:true};
+  if(c.includes('TELEV')||c.includes('TV'))return{cat:'TELEVISION',vol:0.15,floorNeeded:true,missing:true};
+  if(c.includes('AIR')||c.includes('AC'))return{cat:'AIR CONDITIONER',vol:0.15,floorNeeded:true,missing:true};
+  if(c.includes('MICRO'))return{cat:'MICROWAVE',vol:0.06,floorNeeded:false,missing:true};
+  return{cat:c||'OTHER',vol:0.15,floorNeeded:true,missing:true};
+}
+
+// ── HISTORY ──
+function renderHistory(){const tbody=document.getElementById('hist-tbody'),totals=document.getElementById('hist-totals'),empty=document.getElementById('hist-empty');if(!history.length){tbody.innerHTML='';empty.style.display='block';totals.innerHTML='';return;}empty.style.display='none';totals.innerHTML=`<div class="stat-card"><div class="stat-label">Days</div><div class="stat-value">${history.length}</div></div><div class="stat-card"><div class="stat-label">Customers</div><div class="stat-value">${history.reduce((s,h)=>s+h.customers,0)}</div></div><div class="stat-card"><div class="stat-label">Items</div><div class="stat-value">${history.reduce((s,h)=>s+h.items,0)}</div></div><div class="stat-card"><div class="stat-label">Total KM</div><div class="stat-value">${history.reduce((s,h)=>s+h.km,0).toFixed(0)}</div></div>`;tbody.innerHTML=history.map((h,i)=>{const d=new Date(h.date);const ds=isNaN(d)?h.date:d.toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'});return`<tr><td><strong>${ds}</strong></td><td>${h.customers}</td><td>${h.items}</td><td>${h.trips}</td><td>${h.km} km</td><td>${Math.floor(h.minutes/60)}h ${h.minutes%60}m</td><td><button class="btn btn-danger btn-sm" onclick="deleteHist(${i})">Delete</button></td></tr>`;}).join('');}
+function deleteHist(i){if(!confirm('Delete?'))return;history.splice(i,1);saveHistory(history);renderHistory();}
+function exportHistory(){if(!history.length){alert('No history.');return;}const rows=history.map(h=>({'Date':h.date,'Customers':h.customers,'Items':h.items,'Trips':h.trips,'KM':h.km,'Minutes':h.minutes}));const ws=XLSX.utils.json_to_sheet(rows);const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'History');XLSX.writeFile(wb,'ADH_Delivery_History.xlsx');}
+
+// ── SETTINGS ──
+function loadSettingsUI(){if(settings.wh1addr)document.getElementById('wh1-addr').value=settings.wh1addr;if(settings.wh1lat)document.getElementById('wh1-lat').value=settings.wh1lat;if(settings.wh1lng)document.getElementById('wh1-lng').value=settings.wh1lng;if(settings.wh2addr)document.getElementById('wh2-addr').value=settings.wh2addr;if(settings.wh2lat)document.getElementById('wh2-lat').value=settings.wh2lat;if(settings.wh2lng)document.getElementById('wh2-lng').value=settings.wh2lng;if(settings.vehVol)document.getElementById('veh-vol').value=settings.vehVol;if(settings.vehFloor)document.getElementById('veh-floor').value=settings.vehFloor;if(settings.vehSpeed)document.getElementById('veh-speed').value=settings.vehSpeed;if(settings.bizName)document.getElementById('biz-name').value=settings.bizName;if(settings.orsKey){document.getElementById('ors-key').value=settings.orsKey;document.getElementById('ors-key-settings').value=settings.orsKey;}}
+function saveSettings(){settings={wh1addr:document.getElementById('wh1-addr').value,wh1lat:document.getElementById('wh1-lat').value,wh1lng:document.getElementById('wh1-lng').value,wh2addr:document.getElementById('wh2-addr').value,wh2lat:document.getElementById('wh2-lat').value,wh2lng:document.getElementById('wh2-lng').value,vehVol:document.getElementById('veh-vol').value,vehFloor:document.getElementById('veh-floor').value,vehSpeed:document.getElementById('veh-speed').value,bizName:document.getElementById('biz-name').value,orsKey:document.getElementById('ors-key-settings').value,managerPin:document.getElementById('mgr-pin-setting').value||settings.managerPin||'1234'};saveSettingsData();document.getElementById('ors-key').value=settings.orsKey||'';alert('Settings saved!');}
+function getWH1(){return{name:'Shivranjani Showroom',addr:settings.wh1addr||'Shivranjani Cross Roads, Satellite, Ahmedabad',lat:parseFloat(settings.wh1lat)||23.0225,lng:parseFloat(settings.wh1lng)||72.5087};}
+function getWH2(){return{name:'Sarkhej Warehouse',addr:settings.wh2addr||'Sarkhej Bawla Highway, Sarkhej, Ahmedabad',lat:parseFloat(settings.wh2lat)||22.9876,lng:parseFloat(settings.wh2lng)||72.4985};}
+
+// ── PERSISTENCE ──
+function loadSettings(){try{return JSON.parse(localStorage.getItem('adh_s')||'{}')}catch(e){return{}}}
+function saveSettingsData(){localStorage.setItem('adh_s',JSON.stringify(settings));}
+function loadProducts(){try{const s=JSON.parse(localStorage.getItem('adh_p')||'null');if(s&&s.length)return s;}catch(e){}return defaultProducts();}
+function saveProducts(p){localStorage.setItem('adh_p',JSON.stringify(p));}
+function loadHistory(){try{return JSON.parse(localStorage.getItem('adh_h')||'[]');}catch(e){return[];}}
+function saveHistory(h){localStorage.setItem('adh_h',JSON.stringify(h));}
+function loadActiveRoute(){try{return JSON.parse(localStorage.getItem('adh_active')||'null');}catch(e){return null;}}
+function saveActiveRoute(r){localStorage.setItem('adh_active',JSON.stringify(r));}
+
+function defaultProducts(){return[
+  {prefix:'RR19H',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:30,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR20H',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:30,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR20C',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:30,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR21H',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:32,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR21C',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:32,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR21D',cat:'REFRIGERATOR',l:58,w:70,h:134,wt:32,vol:0.54404,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR23H',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:38,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR23C',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:38,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR23D',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:38,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR24H',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:40,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR24C',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:40,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR24T',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:40,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR26H',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:42,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RR26C',cat:'REFRIGERATOR',l:58,w:70,h:169,wt:42,vol:0.68614,floorArea:0.406,floorNeeded:true},
+  {prefix:'RT28C',cat:'REFRIGERATOR',l:61,w:70,h:163,wt:45,vol:0.69601,floorArea:0.427,floorNeeded:true},
+  {prefix:'RT30C',cat:'REFRIGERATOR',l:61,w:70,h:163,wt:47,vol:0.69601,floorArea:0.427,floorNeeded:true},
+  {prefix:'RT31H',cat:'REFRIGERATOR',l:68,w:77,h:181,wt:55,vol:0.94772,floorArea:0.5236,floorNeeded:true},
+  {prefix:'RT34H',cat:'REFRIGERATOR',l:68,w:77,h:181,wt:55,vol:0.94772,floorArea:0.5236,floorNeeded:true},
+  {prefix:'RT34D',cat:'REFRIGERATOR',l:68,w:77,h:181,wt:55,vol:0.94772,floorArea:0.5236,floorNeeded:true},
+  {prefix:'RT38H',cat:'REFRIGERATOR',l:68,w:77,h:181,wt:57,vol:0.94772,floorArea:0.5236,floorNeeded:true},
+  {prefix:'RT38D',cat:'REFRIGERATOR',l:68,w:77,h:181,wt:57,vol:0.94772,floorArea:0.5236,floorNeeded:true},
+  {prefix:'RT40H28',cat:'REFRIGERATOR',l:61,w:70,h:163,wt:50,vol:0.69601,floorArea:0.427,floorNeeded:true},
+  {prefix:'RT80H28',cat:'REFRIGERATOR',l:61,w:70,h:163,wt:50,vol:0.69601,floorArea:0.427,floorNeeded:true},
+  {prefix:'RT40H30',cat:'REFRIGERATOR',l:61,w:71,h:172,wt:53,vol:0.74493,floorArea:0.4331,floorNeeded:true},
+  {prefix:'RT80H30',cat:'REFRIGERATOR',l:61,w:71,h:172,wt:53,vol:0.74493,floorArea:0.4331,floorNeeded:true},
+  {prefix:'RT41D',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:60,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT41H',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:60,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT45D',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:65,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT45H',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:65,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT51D',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:67,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT54C',cat:'REFRIGERATOR',l:75,w:81,h:189,wt:67,vol:1.14817,floorArea:0.6075,floorNeeded:true},
+  {prefix:'RT56D',cat:'REFRIGERATOR',l:85,w:77,h:194,wt:70,vol:1.26973,floorArea:0.6545,floorNeeded:true},
+  {prefix:'RT56H',cat:'REFRIGERATOR',l:85,w:77,h:194,wt:70,vol:1.26973,floorArea:0.6545,floorNeeded:true},
+  {prefix:'RT80F',cat:'REFRIGERATOR',l:85,w:77,h:194,wt:72,vol:1.26973,floorArea:0.6545,floorNeeded:true},
+  {prefix:'RT80H51',cat:'REFRIGERATOR',l:85,w:77,h:194,wt:72,vol:1.26973,floorArea:0.6545,floorNeeded:true},
+  {prefix:'RB45',cat:'REFRIGERATOR',l:80,w:75,h:186,wt:68,vol:1.116,floorArea:0.6,floorNeeded:true},
+  {prefix:'RF57',cat:'REFRIGERATOR',l:88,w:83,h:190,wt:90,vol:1.38776,floorArea:0.7304,floorNeeded:true},
+  {prefix:'RF65',cat:'REFRIGERATOR',l:97,w:78,h:199,wt:110,vol:1.50563,floorArea:0.7566,floorNeeded:true},
+  {prefix:'RF71',cat:'REFRIGERATOR',l:97,w:92,h:199,wt:120,vol:1.77588,floorArea:0.8924,floorNeeded:true},
+  {prefix:'RM90',cat:'REFRIGERATOR',l:97,w:92,h:199,wt:120,vol:1.77588,floorArea:0.8924,floorNeeded:true},
+  {prefix:'RS76',cat:'REFRIGERATOR',l:97,w:78,h:191,wt:115,vol:1.44511,floorArea:0.7566,floorNeeded:true},
+  {prefix:'RS78',cat:'REFRIGERATOR',l:97,w:78,h:191,wt:115,vol:1.44511,floorArea:0.7566,floorNeeded:true},
+  {prefix:'RS7F',cat:'REFRIGERATOR',l:97,w:78,h:191,wt:115,vol:1.44511,floorArea:0.7566,floorNeeded:true},
+  {prefix:'RS7H',cat:'REFRIGERATOR',l:97,w:78,h:191,wt:115,vol:1.44511,floorArea:0.7566,floorNeeded:true},
+  {prefix:'GRDN',cat:'REFRIGERATOR',l:97,w:92,h:199,wt:110,vol:1.77588,floorArea:0.8924,floorNeeded:true},
+  {prefix:'UA32',cat:'TELEVISION',l:80,w:13,h:52,wt:7,vol:0.05408,floorArea:0.104,floorNeeded:true},
+  {prefix:'QA43',cat:'TELEVISION',l:110,w:12,h:65,wt:12,vol:0.0858,floorArea:0.132,floorNeeded:true},
+  {prefix:'UA43',cat:'TELEVISION',l:110,w:12,h:65,wt:12,vol:0.0858,floorArea:0.132,floorNeeded:true},
+  {prefix:'QA50',cat:'TELEVISION',l:126,w:13,h:77,wt:16,vol:0.12613,floorArea:0.1638,floorNeeded:true},
+  {prefix:'UA50',cat:'TELEVISION',l:126,w:13,h:77,wt:16,vol:0.12613,floorArea:0.1638,floorNeeded:true},
+  {prefix:'QA55',cat:'TELEVISION',l:137,w:13,h:82,wt:20,vol:0.14604,floorArea:0.1781,floorNeeded:true},
+  {prefix:'UA55',cat:'TELEVISION',l:137,w:13,h:82,wt:20,vol:0.14604,floorArea:0.1781,floorNeeded:true},
+  {prefix:'MRA55',cat:'TELEVISION',l:137,w:13,h:82,wt:20,vol:0.14604,floorArea:0.1781,floorNeeded:true},
+  {prefix:'QA65',cat:'TELEVISION',l:159,w:15,h:93,wt:28,vol:0.22181,floorArea:0.2385,floorNeeded:true},
+  {prefix:'UA65',cat:'TELEVISION',l:159,w:15,h:93,wt:28,vol:0.22181,floorArea:0.2385,floorNeeded:true},
+  {prefix:'MRA65',cat:'TELEVISION',l:159,w:15,h:93,wt:28,vol:0.22181,floorArea:0.2385,floorNeeded:true},
+  {prefix:'QA75',cat:'TELEVISION',l:182,w:16,h:110,wt:38,vol:0.32032,floorArea:0.2912,floorNeeded:true},
+  {prefix:'UA75',cat:'TELEVISION',l:182,w:16,h:110,wt:38,vol:0.32032,floorArea:0.2912,floorNeeded:true},
+  {prefix:'MRA75',cat:'TELEVISION',l:182,w:16,h:110,wt:38,vol:0.32032,floorArea:0.2912,floorNeeded:true},
+  {prefix:'QA77',cat:'TELEVISION',l:182,w:16,h:110,wt:40,vol:0.32032,floorArea:0.2912,floorNeeded:true},
+  {prefix:'QA83',cat:'TELEVISION',l:208,w:22,h:124,wt:50,vol:0.56742,floorArea:0.4576,floorNeeded:true},
+  {prefix:'QA85',cat:'TELEVISION',l:208,w:22,h:124,wt:52,vol:0.56742,floorArea:0.4576,floorNeeded:true},
+  {prefix:'UA85',cat:'TELEVISION',l:208,w:22,h:124,wt:52,vol:0.56742,floorArea:0.4576,floorNeeded:true},
+  {prefix:'MRA85',cat:'TELEVISION',l:208,w:22,h:124,wt:52,vol:0.56742,floorArea:0.4576,floorNeeded:true},
+  {prefix:'QA98',cat:'TELEVISION',l:237,w:28,h:140,wt:70,vol:0.92904,floorArea:0.6636,floorNeeded:true},
+  {prefix:'UA98',cat:'TELEVISION',l:237,w:28,h:140,wt:70,vol:0.92904,floorArea:0.6636,floorNeeded:true},
+  {prefix:'QA100',cat:'TELEVISION',l:276,w:25,h:178,wt:85,vol:1.2282,floorArea:0.69,floorNeeded:true},
+  {prefix:'QA115',cat:'TELEVISION',l:276,w:25,h:178,wt:95,vol:1.2282,floorArea:0.69,floorNeeded:true},
+  {prefix:'MRA115',cat:'TELEVISION',l:276,w:25,h:178,wt:95,vol:1.2282,floorArea:0.69,floorNeeded:true},
+  {prefix:'SP-LFF',cat:'TELEVISION',l:182,w:16,h:110,wt:38,vol:0.32032,floorArea:0.2912,floorNeeded:true},
+  {prefix:'WA40F08',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:32,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA40F10',cat:'WASHING MACHINE',l:58,w:64,h:108,wt:34,vol:0.4009,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA70',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:36,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA70BG',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:36,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA80F08',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:38,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA80F10',cat:'WASHING MACHINE',l:58,w:64,h:108,wt:40,vol:0.4009,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA80F12',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:40,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA80F14',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:42,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WA80BG',cat:'WASHING MACHINE',l:58,w:64,h:105,wt:38,vol:0.38976,floorArea:0.3712,floorNeeded:true},
+  {prefix:'WD12',cat:'WASHING MACHINE',l:68,w:70,h:95,wt:55,vol:0.4522,floorArea:0.476,floorNeeded:true},
+  {prefix:'WD25',cat:'WASHING MACHINE',l:75,w:92,h:125,wt:80,vol:0.8625,floorArea:0.69,floorNeeded:true},
+  {prefix:'WT10',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:45,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT11',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:45,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT12',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:48,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT14',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:50,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT65',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:42,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT70',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:44,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT75',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:45,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT80',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:47,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT85',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:49,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT90',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:51,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WT95',cat:'WASHING MACHINE',l:96,w:60,h:112,wt:53,vol:0.64512,floorArea:0.576,floorNeeded:true},
+  {prefix:'WW12',cat:'WASHING MACHINE',l:68,w:70,h:95,wt:55,vol:0.4522,floorArea:0.476,floorNeeded:true},
+  {prefix:'WW70',cat:'WASHING MACHINE',l:68,w:67,h:94,wt:58,vol:0.42826,floorArea:0.4556,floorNeeded:true},
+  {prefix:'WW80',cat:'WASHING MACHINE',l:68,w:67,h:94,wt:60,vol:0.42826,floorArea:0.4556,floorNeeded:true},
+  {prefix:'WW90',cat:'WASHING MACHINE',l:68,w:67,h:94,wt:62,vol:0.42826,floorArea:0.4556,floorNeeded:true},
+  {prefix:'CE117',cat:'MICROWAVE',l:60,w:56,h:39,wt:16,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'CE73',cat:'MICROWAVE',l:60,w:56,h:39,wt:14,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'CE76',cat:'MICROWAVE',l:60,w:56,h:39,wt:14,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'CE77',cat:'MICROWAVE',l:60,w:56,h:39,wt:15,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'MC28',cat:'MICROWAVE',l:60,w:56,h:39,wt:14,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'MC32',cat:'MICROWAVE',l:60,w:56,h:39,wt:16,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'MG23',cat:'MICROWAVE',l:60,w:56,h:39,wt:13,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'MS23',cat:'MICROWAVE',l:60,w:56,h:39,wt:12,vol:0.13104,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-B450',cat:'SOUNDBAR',l:105,w:15,h:30,wt:5,vol:0.04725,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-B650',cat:'SOUNDBAR',l:115,w:20,h:35,wt:7,vol:0.0805,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-B670',cat:'SOUNDBAR',l:115,w:20,h:35,wt:7,vol:0.0805,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-B67E',cat:'SOUNDBAR',l:115,w:20,h:35,wt:7,vol:0.0805,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-B750',cat:'SOUNDBAR',l:120,w:22,h:38,wt:8,vol:0.10032,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-C450',cat:'SOUNDBAR',l:105,w:15,h:30,wt:5,vol:0.04725,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-Q600',cat:'SOUNDBAR',l:120,w:22,h:38,wt:8,vol:0.10032,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-Q800',cat:'SOUNDBAR',l:125,w:25,h:40,wt:9,vol:0.125,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-Q930',cat:'SOUNDBAR',l:130,w:30,h:42,wt:10,vol:0.1638,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-Q990',cat:'SOUNDBAR',l:130,w:30,h:42,wt:11,vol:0.1638,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-QS700',cat:'SOUNDBAR',l:130,w:30,h:42,wt:10,vol:0.1638,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-S800',cat:'SOUNDBAR',l:120,w:22,h:38,wt:8,vol:0.10032,floorArea:0.0,floorNeeded:false},
+  {prefix:'HW-S801',cat:'SOUNDBAR',l:120,w:22,h:38,wt:8,vol:0.10032,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-ST40',cat:'SOUNDBAR',l:105,w:15,h:30,wt:5,vol:0.04725,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-ST50',cat:'SOUNDBAR',l:115,w:20,h:35,wt:6,vol:0.0805,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-ST90',cat:'SOUNDBAR',l:130,w:30,h:42,wt:10,vol:0.1638,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-T40',cat:'SOUNDBAR',l:105,w:15,h:30,wt:5,vol:0.04725,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-T50',cat:'SOUNDBAR',l:115,w:20,h:35,wt:6,vol:0.0805,floorArea:0.0,floorNeeded:false},
+  {prefix:'MX-T70',cat:'SOUNDBAR',l:120,w:22,h:38,wt:7,vol:0.10032,floorArea:0.0,floorNeeded:false},
+  {prefix:'AR',cat:'AIR CONDITIONER (INDOOR)',l:93,w:38,h:29,wt:13,vol:0.10249,floorArea:0.0,floorNeeded:false},
+  {prefix:'AR60H',cat:'AIR CONDITIONER (INDOOR)',l:111,w:38,h:29,wt:15,vol:0.12232,floorArea:0.0,floorNeeded:false}
+];}
+
+// ── SAMPLE DATA ──
+function loadSampleData(){
+  S.deliveries=[
+    {customer:'RAHUL MEHTA',phone:'9000000001',address:'12 SAMPLE BUNGLOWS, VASTRAPUR, AHMEDABAD, 380015',area:'VASTRAPUR',lat:23.0461,lng:72.5293,geocoded:true,invoice:'ADH/187/26-27',source:'shivranjani',timeConstraint:null,items:[{model:'RT56HG7A61SLTL',cat:'REFRIGERATOR',vol:0.50,floorNeeded:true,missing:false}]},
+    {customer:'PRIYA SHAH',phone:'9000000002',address:'B 101 DEMO TOWER, BODAKDEV, AHMEDABAD, 380054',area:'BODAKDEV',lat:23.0428,lng:72.5089,geocoded:true,invoice:'ADH/186/26-27',source:'shivranjani',timeConstraint:{type:'before',t1:'13:00'},items:[{model:'WA80F08E2BTL',cat:'WASHING MACHINE',vol:0.29,floorNeeded:true,missing:false}]},
+    {customer:'ANITA DESAI',phone:'9000000003',address:'SAMPLE CLUB ROAD, SHELA, BOPAL, AHMEDABAD, 380058',area:'SHELA',lat:23.0107,lng:72.4633,geocoded:true,invoice:'ADH/0188/26-27',source:'sarkhej',timeConstraint:{type:'after',t1:'17:00'},items:[{model:'WA80F10S2BTL',cat:'WASHING MACHINE',vol:0.29,floorNeeded:true,missing:false}]},
+    {customer:'SAMPLE CLINIC PVT LTD',phone:'9000000004',address:'STERLING HOSPITAL ROAD, GURUKUL, AHMEDABAD, 380052',area:'GURUKUL',lat:23.0658,lng:72.5427,geocoded:true,invoice:'B2B/033/26-27',source:'shivranjani',timeConstraint:{type:'between',t1:'10:00',t2:'13:00'},items:[{model:'GRDN-70HSWP',cat:'REFRIGERATOR',vol:1.20,floorNeeded:true,missing:false},{model:'GRDN-70HSWP',cat:'REFRIGERATOR',vol:1.20,floorNeeded:true,missing:false}]},
+    {customer:'NEHA PATEL',phone:'9000000005',address:'5 EXAMPLE SOCIETY, VASTRAPUR, AHMEDABAD, 380015',area:'VASTRAPUR',lat:23.0452,lng:72.5249,geocoded:true,invoice:'ADH/0189/26-27',source:'shivranjani',timeConstraint:null,items:[{model:'WA40F08D1CTL',cat:'WASHING MACHINE',vol:0.29,floorNeeded:true,missing:false}]},
+    {customer:'VIKRAM SINGH',phone:'9000000006',address:'C 202 TEST AVENUE, SATELLITE, AHMEDABAD, 380015',area:'SATELLITE',lat:23.0295,lng:72.5182,geocoded:true,invoice:'ADH/',source:'shivranjani',timeConstraint:null,items:[{model:'UA50U8100FULXL',cat:'TELEVISION',vol:0.09,floorNeeded:true,missing:false}]},
+    {customer:'KIRAN TRIVEDI',phone:'9000000007',address:'40 DEMO SOC, BODAKDEV, AHMEDABAD, 380054',area:'BODAKDEV',lat:23.0490,lng:72.5060,geocoded:true,invoice:'ADH/0193/26-27',source:'sarkhej',timeConstraint:null,items:[{model:'RT80H51C2FHL',cat:'REFRIGERATOR',vol:0.80,floorNeeded:true,missing:false}]},
+  ];
+  showReview();
+}
+
+// ── HELPERS ──
+function itemsVol(items){return items.reduce((s,i)=>s+i.vol,0);}
+function itemsFloor(items){let f=0,acs=0;items.forEach(i=>{if(i.cat.includes('OUTDOOR'))acs++;else if(i.floorNeeded)f+=Math.max(i.vol/1.2,0.15);});f+=Math.ceil(acs/2)*0.24;return f;}
+function fmtTc(tc){if(!tc||tc.type==='none')return '';if(tc.type==='before')return`Before ${tc.t1}`;if(tc.type==='after')return`After ${tc.t1}`;if(tc.type==='between')return`${tc.t1}–${tc.t2}`;return '';}
+function t2m(t){if(!t)return 0;const[h,m]=(t+'').split(':');return parseInt(h)*60+parseInt(m||0);}
+function m2t(m){const h=Math.floor(m/60)%24,mn=m%60;return`${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`;}
+function norm(v){return(v===null||v===undefined)?'':String(v).trim();}
+function esc(s){return norm(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function closeModal(id){document.getElementById(id).style.display='none';}
+document.querySelectorAll('.modal-overlay').forEach(el=>el.addEventListener('click',e=>{if(e.target===el)el.style.display='none';}));
+init();initDark();initOfflineDetection();
+
+
+// ── FIX 7: Drag-and-drop stops between/within trips ──
+let dragState={tripIdx:null,stopIdx:null};
+// Per-trip undo history: keyed by trip index -> array of {fromTI,toTI,snapFrom,snapTo}.
+// A cross-trip move is registered under BOTH trip indices so the undo button
+// inside either trip's card can revert that specific move on its own.
+let dragUndoStacks={};
+// Guards against logging a duplicate History entry if "Save" is pressed
+// again after the whole route is already finished. Reset whenever a fresh
+// route is built or the planner is reset.
+let routeFinished=false;
+
+function renderTripStops(trip,ti,globalSeqStart){
+  let html='',dSeq=globalSeqStart||0;
+  trip.stops.forEach((s,si)=>{
+    if(s.type==='wh'){
+      html+=`<div class="stop-row wh-row" data-ti="${ti}" data-si="${si}">${renderStopInner(s,si,ti,false,null)}</div>`;
+    } else {
+      dSeq++;
+      const frozen=trip.frozen;
+      html+=`<div class="stop-row${frozen?'':' draggable-stop'}" draggable="${!frozen}" data-ti="${ti}" data-si="${si}"
+        ondragstart="dragStart(event,${ti},${si})"
+        ondragover="dragOver(event)"
+        ondrop="dragDrop(event,${ti},${si})"
+        ondragleave="this.classList.remove('drag-over')"
+        style="cursor:${frozen?'default':'grab'}">
+        ${renderStopInner(s,si,ti,!frozen,dSeq)}
+        </div>`;
+    }
+  });
+  // FIX 8: Return to Sarkhej warehouse at end of each trip
+  const wh2=getWH2();
+  const lastStop=trip.stops[trip.stops.length-1];
+  if(lastStop&&lastStop.type==='delivery'){
+    const[lLat,lLng]=stopCoords(lastStop)||[lastStop.lat,lastStop.lng];
+    const retDist=getDist(lLat,lLng,wh2.lat,wh2.lng);
+    const retMin=Math.round(retDist/25*60);
+    const lastArrMin=t2m(lastStop.arriveTime)+(lastStop.stopMin||20);
+    const retArrTime=m2t(lastArrMin+retMin);
+    html+=`<div class="stop-row" style="background:#FFF9F0;border-left:3px solid var(--amber-mid);opacity:.8">
+      <div class="stop-seq" style="background:var(--amber-light);border-color:var(--amber-mid);color:var(--amber)">🏁</div>
+      <div style="flex:1">
+        <div class="stop-name" style="color:var(--amber)">Return to ${wh2.name}</div>
+        <div class="stop-address">${wh2.addr||''}</div>
+        <div class="stop-tags"><span class="badge badge-amber">+${retMin} min · ${retDist.toFixed(1)} km back</span></div>
+      </div>
+      <div class="stop-eta"><div class="stop-time" style="color:var(--amber)">${retArrTime}</div><div style="font-size:11px;color:var(--gray-text)">back at WH</div></div>
+    </div>`;
+  }
+  return html;
+}
+
+function renderStopInner(s,si,ti,draggable,seqNum){
+  if(s.type==='wh')return`<div class="stop-seq" style="background:var(--amber-light);border-color:var(--amber-mid);color:var(--amber)">🏭</div><div style="flex:1"><div class="stop-name">${esc(s.name)}</div><div class="stop-address">${esc(s.addr||'')}</div><div class="stop-tags">${si===0?'<span class="badge badge-teal">Start here — load items</span>':`<span class="badge badge-amber">Pickup · +${s.travelMin}min · ${s.distKm}km</span>`}</div></div><div class="stop-eta"><div class="stop-time">${s.arriveTime}</div></div>`;
+  const nav=s.navUrl||'#';
+  return `<div class="stop-seq" style="flex-direction:column;gap:1px;font-size:10px;line-height:1.1">
+      <span style="font-weight:700;font-size:12px">${seqNum||''}</span>
+      ${draggable?'<span style="font-size:11px;opacity:.6">⠿</span>':''}
+    </div>
+    <div style="flex:1">
+      <div class="stop-name">${esc(s.customer)}${s.phone?`<span style="font-weight:400;font-size:12px;color:var(--gray-text)"> · ${esc(s.phone)}</span>`:''}</div>
+      <div class="stop-address">${esc(s.addr||'—')}</div>
+      <div class="stop-items">${s.items.map(it=>esc(it.model)).join(' · ')}</div>
+      ${s.warn?`<div style="margin-top:4px"><span class="badge badge-amber">${esc(s.warn)}</span></div>`:''}
+      <div class="stop-tags">
+        ${s.timeConstraint&&s.timeConstraint.type!=='none'?`<span class="badge badge-blue">${esc(fmtTc(s.timeConstraint))}</span>`:''}
+        <span class="badge badge-gray">+${s.travelMin}min · ${s.distKm}km</span>
+        ${s.invoice?`<span class="badge badge-gray">Inv: ${esc(s.invoice)}</span>`:''}
+        ${s.stopMin?`<span class="badge badge-teal">${s.stopMin}min stop</span>`:''}
+      </div>
+    </div>
+    <div class="stop-eta">
+      <div class="stop-time">${s.arriveTime}</div>
+      <a href="${nav}" target="_blank" style="font-size:11px;color:var(--blue);text-decoration:none">📍 Nav</a>
+    </div>`;
+}
+
+function dragStart(e,ti,si){
+  dragState={tripIdx:ti,stopIdx:si};
+  e.dataTransfer.effectAllowed='move';
+  e.target.style.opacity='0.5';
+}
+function dragOver(e){
+  e.preventDefault();
+  e.dataTransfer.dropEffect='move';
+  e.currentTarget.classList.add('drag-over');
+}
+function dragDrop(e,toTripIdx,toStopIdx){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const{tripIdx:fromTI,stopIdx:fromSI}=dragState;
+  if(fromTI===null)return;
+  const fromTrip=S.trips[fromTI];
+  const fromStop=fromTrip.stops[fromSI];
+  if(!fromStop||fromStop.type==='wh')return;
+  // FIX 1: undo is now scoped PER TRIP rather than one shared history for
+  // the whole route. A same-trip reorder is recorded only against that
+  // trip. A cross-trip move (dragging a stop into a different trip) is
+  // recorded against BOTH trips it touches, so the undo button inside
+  // either trip's card reverts that specific move and keeps both trips
+  // consistent (no stop left duplicated or missing).
+  const undoEntry={fromTI,toTI:toTripIdx,
+    snapFrom:JSON.parse(JSON.stringify(fromTrip.stops)),
+    snapTo:toTripIdx!==fromTI?JSON.parse(JSON.stringify(S.trips[toTripIdx].stops)):null};
+  pushTripUndo(fromTI,undoEntry);
+  if(toTripIdx!==fromTI)pushTripUndo(toTripIdx,undoEntry);
+  // Remove from source
+  fromTrip.stops.splice(fromSI,1);
+  // Insert into destination
+  const toTrip=S.trips[toTripIdx];
+  let insertAt=toStopIdx;
+  if(fromTI===toTripIdx&&fromSI<toStopIdx)insertAt--;
+  // Don't insert before first wh stop
+  insertAt=Math.max(1,insertAt);
+  toTrip.stops.splice(insertAt,0,fromStop);
+  // Recalculate ETAs for affected trips, cascading to all later trips too
+  recomputeAllTripsCascading();
+  dragState={tripIdx:null,stopIdx:null};
+  // Re-render
+  renderTrips(S.trips[0]?.depTime||'11:30','18:30',[...new Set(S.trips.map(t=>t.tempo))].length,0);
+}
+
+function pushTripUndo(ti,entry){
+  if(!dragUndoStacks[ti])dragUndoStacks[ti]=[];
+  dragUndoStacks[ti].push(entry);
+  if(dragUndoStacks[ti].length>10)dragUndoStacks[ti].shift(); // cap history at 10 moves per trip
+}
+
+function removeUndoEntry(ti,entry){
+  const stack=dragUndoStacks[ti];
+  if(!stack)return;
+  const idx=stack.lastIndexOf(entry);
+  if(idx>-1)stack.splice(idx,1);
+}
+
+// Undoes only the most recent drag that touched THIS trip. If that move
+// was a cross-trip move, the paired trip is restored too (from the same
+// snapshot) so the two trips stay consistent, and the entry is removed
+// from both trips' histories so neither shows a stale "undo" afterwards.
+function undoTripDrag(ti){
+  const stack=dragUndoStacks[ti];
+  if(!stack||!stack.length)return;
+  const entry=stack[stack.length-1];
+  removeUndoEntry(entry.fromTI,entry);
+  if(entry.toTI!==entry.fromTI)removeUndoEntry(entry.toTI,entry);
+  S.trips[entry.fromTI].stops=entry.snapFrom;
+  if(entry.toTI!==entry.fromTI)S.trips[entry.toTI].stops=entry.snapTo;
+  recomputeAllTripsCascading();
+  renderTrips(S.trips[0]?.depTime||'11:30','18:30',[...new Set(S.trips.map(t=>t.tempo))].length,0);
+}
+
+function updateAllUndoButtons(){
+  S.trips.forEach((t,ti)=>{
+    const btn=document.getElementById('undo-trip-btn-'+ti);
+    if(btn)btn.style.display=(dragUndoStacks[ti]&&dragUndoStacks[ti].length)?'inline-flex':'none';
+  });
+}
+
+function recomputeETAs(ti){
+  const trip=S.trips[ti];
+  const globalStopMin=parseInt(document.getElementById('stop-min').value)||20;
+  let curMin=t2m(trip.depTime);let pos=null;
+  trip.stops.forEach((s,si)=>{
+    const[lat,lng]=stopCoords(s)||[s.lat||23.02,s.lng||72.55];
+    if(si===0){s.arriveTime=m2t(curMin);pos={lat,lng};return;}
+    const dist=getDist(pos.lat,pos.lng,lat,lng);
+    const tm=Math.round(dist/25*60);
+    s.distKm=parseFloat(dist.toFixed(1));s.travelMin=tm;
+    curMin+=tm;s.arriveTime=m2t(curMin);
+    const sm=s.stopMin||globalStopMin;
+    if(s.type==='delivery')curMin+=sm;
+    pos={lat,lng};
+  });
+  const km=trip.stops.reduce((s,st)=>s+(st.distKm||0),0);
+  const min=trip.stops.reduce((s,st)=>s+(st.travelMin||0)+(st.type==='delivery'?(st.stopMin||globalStopMin):0),0);
+  trip.totalKm=parseFloat(km.toFixed(1));
+  trip.totalMin=min;
+  trip.endTime=m2t(t2m(trip.depTime)+min);
+  // FIX 7: compute the return-to-warehouse time so the NEXT trip (same tempo)
+  // can be told when this tempo's vehicle is actually free again
+  const wh2r=getWH2();
+  const lastD=trip.stops.filter(s=>s.type==='delivery').slice(-1)[0];
+  if(lastD){
+    const[lLat,lLng]=stopCoords(lastD)||[wh2r.lat,wh2r.lng];
+    const retDist=getDist(lLat,lLng,wh2r.lat,wh2r.lng);
+    const retMin=Math.round(retDist/25*60);
+    trip.returnToWHTime=m2t(t2m(trip.endTime)+retMin);
+    trip.returnDist=parseFloat(retDist.toFixed(1));
+    trip.returnMin=retMin;
+  } else {
+    trip.returnToWHTime=trip.endTime;trip.returnDist=0;trip.returnMin=0;
+  }
+}
+
+// Recompute every trip in order, and for trips sharing the same tempo,
+// push each trip's departure to be no earlier than the previous trip's
+// return-to-warehouse time (FIX 7). Trips with a manually-set custom
+// departure (trip.manualDepTime) are respected and not auto-shifted.
+function recomputeAllTripsCascading(){
+  const byTempo={};
+  S.trips.forEach(t=>{(byTempo[t.tempo]=byTempo[t.tempo]||[]).push(t);});
+  Object.values(byTempo).forEach(tripsInTempo=>{
+    tripsInTempo.sort((a,b)=>a.tripNum-b.tripNum);
+    tripsInTempo.forEach((trip,idx)=>{
+      if(idx>0){
+        const prevTrip=tripsInTempo[idx-1];
+        // Only auto-push the dep time forward if manager hasn't manually overridden it
+        if(!trip.manualDepTime && t2m(trip.depTime)<t2m(prevTrip.returnToWHTime||prevTrip.endTime)){
+          trip.depTime=prevTrip.returnToWHTime||prevTrip.endTime;
+        }
+      }
+      recomputeETAs(S.trips.indexOf(trip));
+    });
+  });
+}
+
+// FIX 5: let the manager override departure/end time for ONE specific trip
+function setTripDepTime(ti,newTime){
+  const trip=S.trips[ti];
+  trip.depTime=newTime;
+  trip.manualDepTime=true; // mark as manual so cascading won't silently override it
+  recomputeAllTripsCascading();
+  renderTrips(S.trips[0]?.depTime||'11:30','18:30',[...new Set(S.trips.map(t=>t.tempo))].length,0);
+}
+
+// ── FIX 9: Per-trip Save & Finish ──
+
+async function saveAllTrips(){
+  for(let i=0;i<S.trips.length;i++){
+    if(!S.trips[i].frozen)await saveSingleTrip(i,true);
+  }
+  finishRouteIfComplete();
+}
+
+async function saveSingleTrip(ti,skipFinishCheck){
+  const trip=S.trips[ti];
+  if(trip.frozen){alert('This trip is already saved.');return;}
+  if(!confirm(`Save Trip ${trip.tripNum}? Once saved, stops cannot be rearranged.`))return;
+  trip.frozen=true;
+  // Push to cloud — save all trips (with frozen flags)
+  const date=document.getElementById('dep-date').value;
+  if(!activeRoute)activeRoute={trips:S.trips,date,progress:{}};
+  else{activeRoute.trips=S.trips;activeRoute.date=date;}
+  saveActiveRoute(activeRoute);
+  const ok=await saveRouteToCloud(S.trips,date,activeRoute.id||null);
+  if(ok){
+    const fresh=await loadRouteFromCloud();
+    if(fresh){activeRoute=fresh;saveActiveRoute(activeRoute);}
+  }
+  // Update button
+  const btn=document.getElementById('save-trip-btn-'+ti);
+  if(btn){btn.textContent='✅ Saved';btn.disabled=true;btn.style.opacity='0.6';}
+  // Re-render stops as non-draggable
+  const container=document.getElementById('trip-stops-'+ti);
+  if(container)container.innerHTML=renderTripStops(trip,ti);
+  setSyncStatus('saved','☁️ Trip '+trip.tripNum+' saved');
+  setTimeout(()=>setSyncStatus('idle'),3000);
+  // FIX: previously nothing ever moved the wizard to the "Done" screen once
+  // every trip was saved — saveAllTrips()/saveSingleTrip() never called
+  // setStep(4)/showSec('sec-done'). Now, whenever the LAST unsaved trip is
+  // frozen, advance automatically. skipFinishCheck avoids a redundant check
+  // on every iteration when saveAllTrips() is looping through all trips.
+  if(!skipFinishCheck)finishRouteIfComplete();
+}
+
+// True once every planned trip has been individually saved/frozen.
+function allTripsFrozen(){return S.trips.length>0&&S.trips.every(t=>t.frozen);}
+
+// Moves the wizard to the "Done" screen once the whole day's route is saved,
+// and records one History entry for it. routeFinished guards against
+// logging a duplicate History row if Save is pressed again afterwards.
+function finishRouteIfComplete(){
+  if(!allTripsFrozen())return;
+  showSec('sec-done');setStep(4);
+  if(routeFinished)return;
+  routeFinished=true;
+  const date=document.getElementById('dep-date').value;
+  const km=S.trips.reduce((s,t)=>s+t.totalKm,0),min=S.trips.reduce((s,t)=>s+t.totalMin,0);
+  history.unshift({date,customers:S.deliveries.length,items:S.deliveries.reduce((s,d)=>s+d.items.length,0),trips:S.trips.length,km:parseFloat(km.toFixed(1)),minutes:min});
+  saveHistory(history);
+}
+
+// Drag-over style
+const dragStyle=document.createElement('style');
+dragStyle.textContent='.drag-over{background:var(--blue-light)!important;border-top:2px solid var(--blue)!important;}.draggable-stop:hover{background:#F0F8FF}';
+document.head.appendChild(dragStyle);
+
+
+// ══════════════════════════════════════════════════════
+// FEATURE 11: DARK MODE
+// ══════════════════════════════════════════════════════
+function toggleDark(){
+  document.body.classList.toggle('dark');
+  const isDark=document.body.classList.contains('dark');
+  localStorage.setItem('adh_dark',isDark?'1':'0');
+  document.getElementById('dark-toggle').textContent=isDark?'☀️':'🌙';
+  document.querySelector('meta[name="theme-color"]').content=isDark?'#0C1828':'#185FA5';
+}
+function initDark(){
+  if(localStorage.getItem('adh_dark')==='1'){
+    document.body.classList.add('dark');
+    const btn=document.getElementById('dark-toggle');
+    if(btn)btn.textContent='☀️';
+    document.querySelector('meta[name="theme-color"]').content='#0C1828';
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 3: DELIVERY NOTES
+// ══════════════════════════════════════════════════════
+function editNote(i){
+  const d=S.deliveries[i];
+  const note=prompt(`Delivery note for ${d.customer}:`, d.notes||'');
+  if(note!==null){d.notes=note.trim();renderReview();}
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 7: MULTIPLE EXCEL UPLOADS
+// ══════════════════════════════════════════════════════
+let addMoreMode=false;
+function addMoreExcel(){
+  addMoreMode=true;
+  document.getElementById('file-input').click();
+}
+
+// Override parseFile to support addMore mode
+const _origParseFile=parseFile;
+function parseFile(file){
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const wb=XLSX.read(e.target.result,{type:'array'});
+      const rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      if(addMoreMode&&S.deliveries.length){
+        // Merge — don't replace existing deliveries
+        const existing=new Set(S.deliveries.map(d=>d.customer));
+        const tempDeliveries=S.deliveries;
+        S.deliveries=[];
+        buildDeliveries(rows); // builds into S.deliveries
+        const newOnes=S.deliveries.filter(d=>!existing.has(d.customer));
+        S.deliveries=[...tempDeliveries,...newOnes];
+        addMoreMode=false;
+        if(newOnes.length){
+          showReview();
+          setTimeout(()=>alert(`Added ${newOnes.length} new customer(s) to existing plan.`),300);
+        } else {
+          alert('No new customers found — all are already in the plan.');
+          showReview();
+        }
+      } else {
+        addMoreMode=false;
+        buildDeliveries(rows);
+      }
+    }catch(err){alert('Cannot read file:\n'+err.message);}
+  };
+  r.readAsArrayBuffer(file);
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 2: OPTIONAL PHOTO PROOF
+// ══════════════════════════════════════════════════════
+function openPhotoCapture(){
+  const input=document.createElement('input');
+  input.type='file';input.accept='image/*';input.capture='environment';
+  input.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      APP.pendingPhoto=ev.target.result; // base64
+      const preview=document.getElementById('photo-preview-area');
+      const img=document.getElementById('photo-preview-img');
+      if(preview&&img){img.src=ev.target.result;preview.style.display='block';}
+    };
+    reader.readAsDataURL(file);
+  };
+  input.click();
+}
+function clearPhoto(){
+  APP.pendingPhoto=null;
+  const pa=document.getElementById('photo-preview-area');if(pa)pa.style.display='none';
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 9: DRIVER START/END TIME TRACKING
+// ══════════════════════════════════════════════════════
+function recordDriverStart(){
+  if(!activeRoute)return;
+  if(!activeRoute.driverLog)activeRoute.driverLog={};
+  if(!activeRoute.driverLog.startTime){
+    activeRoute.driverLog.startTime=new Date().toISOString();
+    activeRoute.driverLog.startTimeDisplay=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+    saveActiveRoute(activeRoute);
+  }
+  updateTimingDisplay();
+}
+function recordDriverEnd(){
+  if(!activeRoute||!activeRoute.driverLog)return;
+  activeRoute.driverLog.endTime=new Date().toISOString();
+  activeRoute.driverLog.endTimeDisplay=new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  saveActiveRoute(activeRoute);
+  updateTimingDisplay();
+}
+function updateTimingDisplay(){
+  const el=document.getElementById('timing-start');if(!el)return;
+  const log=activeRoute&&activeRoute.driverLog;
+  if(!log){el.textContent='—';return;}
+  let txt='🕐 Started: '+(log.startTimeDisplay||'—');
+  if(log.endTimeDisplay)txt+=' · Finished: '+log.endTimeDisplay;
+  el.textContent=txt;
+}
+
+// ══════════════════════════════════════════════════════
+// FEATURE 15: OFFLINE STATUS INDICATOR
+// ══════════════════════════════════════════════════════
+function initOfflineDetection(){
+  const showStatus=()=>{
+    let el=document.getElementById('offline-badge');
+    if(!el){el=document.createElement('div');el.id='offline-badge';el.style.cssText='position:fixed;bottom:16px;left:50%;transform:translateX(-50%);padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 12px rgba(0,0,0,.2)';document.body.appendChild(el);}
+    if(!navigator.onLine){
+      el.style.display='block';el.style.background='#E53E3E';el.style.color='white';
+      el.textContent='📵 Offline — map may not load but route data is cached';
+    } else {
+      el.style.display='block';el.style.background='var(--teal)';el.style.color='white';
+      el.textContent='✓ Back online';
+      setTimeout(()=>{el.style.display='none';},3000);
+    }
+  };
+  window.addEventListener('online',showStatus);
+  window.addEventListener('offline',showStatus);
+  if(!navigator.onLine)showStatus();
+}
+
+// Patch markDelivered to record end time when last delivery done + attach photo
+const _origMarkDelivered=markDelivered;
+async function markDelivered(){
+  const trip=activeRoute.trips[APP.driverTripIdx];
+  const prog=activeRoute.progress||{};
+  const delivStops=trip.stops.filter(s=>s.type==='delivery');
+  const next=delivStops.find(s=>!prog[s.customer]);
+  if(!next)return;
+
+  // Attach photo if one was taken
+  if(APP.pendingPhoto){
+    if(!activeRoute.photos)activeRoute.photos={};
+    // Store compressed base64 photo keyed by customer name
+    activeRoute.photos[next.customer]={
+      data:APP.pendingPhoto,
+      time:new Date().toISOString()
+    };
+    APP.pendingPhoto=null;
+  }
+
+  // Call original logic
+  if(!activeRoute.progress)activeRoute.progress={};
+  activeRoute.progress[next.customer]=Date.now();
+  saveActiveRoute(activeRoute);
+
+  // Check if this was the last delivery — record end time
+  const remaining=delivStops.filter(s=>!activeRoute.progress[s.customer]);
+  if(remaining.length===0)recordDriverEnd();
+
+  renderDriverPage();
+  setTimeout(initDriverMap,100);
+  if(activeRoute.id){
+    await markDeliveredInCloud(activeRoute.id,activeRoute.progress);
+  } else {
+    const fresh=await loadRouteFromCloud();
+    if(fresh){activeRoute.id=fresh.id;await markDeliveredInCloud(activeRoute.id,activeRoute.progress);}
+  }
+}
+
+// Show photos in manager Live Track
+function getDeliveryPhoto(customer){
+  const photos=activeRoute&&activeRoute.photos;
+  if(!photos||!photos[customer])return '';
+  return `<div style="margin-top:6px"><img src="${photos[customer].data}" style="max-width:120px;border-radius:6px;border:1px solid var(--gray-border)" onclick="this.style.maxWidth=this.style.maxWidth==='100%'?'120px':'100%'" title="Click to expand"></div>`;
+}
+
+
+// ══════════════════════════════════════════════════════
+// AI DELIVERY INTELLIGENCE CHATBOT
+// ══════════════════════════════════════════════════════
+let aiChatHistory = [];
+
+// Gather ALL delivery data from Supabase + localStorage for the AI to analyse
+async function gatherDeliveryData() {
+  const data = { summary: {}, areas: {}, products: {}, customers: {}, daily: [], routes: [] };
+
+  // 1. Load all routes from Supabase (not just today)
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/routes?order=created_at.desc&limit=100`, { headers: SB_HDR });
+    if (res.ok) {
+      const rows = await res.json();
+      rows.forEach(row => {
+        try {
+          const trips = typeof row.trips === 'string' ? JSON.parse(row.trips) : row.trips;
+          const progress = typeof row.progress === 'string' ? JSON.parse(row.progress) : (row.progress || {});
+          const dayData = { date: row.date, trips: trips.length, customers: 0, items: 0, km: 0, delivered: 0 };
+
+          trips.forEach(trip => {
+            dayData.km += trip.totalKm || 0;
+            const stops = trip.stops || [];
+            stops.forEach(stop => {
+              if (stop.type !== 'delivery') return;
+              dayData.customers++;
+              const isDelivered = !!progress[stop.customer];
+              if (isDelivered) dayData.delivered++;
+
+              // Count areas
+              const addr = (stop.addr || '').toUpperCase();
+              const area = extractArea(addr);
+              if (area) data.areas[area] = (data.areas[area] || 0) + 1;
+
+              // Count customers
+              const cust = stop.customer || 'Unknown';
+              data.customers[cust] = (data.customers[cust] || 0) + 1;
+
+              // Count products
+              (stop.items || []).forEach(item => {
+                dayData.items++;
+                const cat = item.cat || 'OTHER';
+                data.products[cat] = (data.products[cat] || 0) + 1;
+                // Also track model prefix
+                const prefix = (item.model || '').substring(0, 4);
+                if (prefix) {
+                  const key = 'model_' + prefix;
+                  data.products[key] = (data.products[key] || 0) + 1;
+                }
+              });
+            });
+          });
+          data.daily.push(dayData);
+          data.routes.push({ date: row.date, trips: trips.length, km: dayData.km, customers: dayData.customers, items: dayData.items });
+        } catch(e) {}
+      });
+    }
+  } catch(e) {}
+
+  // 2. Also pull from localStorage history
+  try {
+    const hist = JSON.parse(localStorage.getItem('adh_h') || '[]');
+    data.localHistory = hist;
+  } catch(e) {}
+
+  // 3. Compute summary stats
+  data.summary = {
+    totalDays: data.daily.length,
+    totalCustomers: data.daily.reduce((s, d) => s + d.customers, 0),
+    totalItems: data.daily.reduce((s, d) => s + d.items, 0),
+    totalKm: Math.round(data.daily.reduce((s, d) => s + d.km, 0)),
+    totalDelivered: data.daily.reduce((s, d) => s + d.delivered, 0),
+    avgCustomersPerDay: data.daily.length ? Math.round(data.daily.reduce((s, d) => s + d.customers, 0) / data.daily.length) : 0,
+    avgKmPerDay: data.daily.length ? Math.round(data.daily.reduce((s, d) => s + d.km, 0) / data.daily.length) : 0,
+    busiestDay: data.daily.sort((a, b) => b.customers - a.customers)[0] || null,
+  };
+
+  // Sort areas and products
+  data.topAreas = Object.entries(data.areas).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  data.topProducts = Object.entries(data.products).filter(([k]) => !k.startsWith('model_')).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  data.topCustomers = Object.entries(data.customers).sort((a, b) => b[1] - a[1]).slice(0, 10);
+  data.recentRoutes = data.routes.slice(0, 10);
+
+  return data;
+}
+
+function extractArea(addr) {
+  // Extract the locality from an Ahmedabad address
+  const known = ['VASTRAPUR','BODAKDEV','SATELLITE','BOPAL','SHELA','MEMNAGAR','AMBAWADI',
+    'NAVRANGPURA','PALDI','MANINAGAR','GOTA','NARANPURA','THALTEJ','CHANDKHEDA',
+    'PRAHLAD NAGAR','SOUTH BOPAL','VEJALPUR','GHATLODIYA','GURUKUL','SOLA',
+    'ANANDNAGAR','JODHPUR','DRIVE IN','CG ROAD','ASHRAM ROAD','SARKHEJ',
+    'MOTERA','HANSOL','RANIP','NIKOL','VATVA','BAPUNAGAR','RAKHIAL'];
+  for (const area of known) {
+    if (addr.includes(area)) return area;
+  }
+  // Try pincode-based
+  const pin = addr.match(/38\d{4}/);
+  if (pin) return 'PIN-' + pin[0];
+  return null;
+}
+
+async function sendAIChat() {
+  const input = document.getElementById('ai-input');
+  const question = input.value.trim();
+  if (!question) return;
+
+  // Hide welcome message
+  const welcome = document.getElementById('ai-welcome');
+  if (welcome) welcome.style.display = 'none';
+
+  // Add user message
+  appendAIMessage('user', question);
+  input.value = '';
+  input.style.height = 'auto';
+
+  // Show typing indicator
+  const typingId = showTyping();
+
+  // Gather data
+  let deliveryData;
+  try {
+    deliveryData = await gatherDeliveryData();
+  } catch(e) {
+    deliveryData = { summary: {}, error: e.message };
+  }
+
+  // Build system prompt with actual data
+  const systemPrompt = `You are an AI assistant for Alpha Digital Home, a Samsung Electronics brand shop in Ahmedabad, India. You help the manager analyse their delivery operations data.
+
+Here is their REAL delivery data from the database:
+
+SUMMARY STATISTICS:
+- Total delivery days recorded: ${deliveryData.summary.totalDays}
+- Total customer deliveries: ${deliveryData.summary.totalCustomers}
+- Total items delivered: ${deliveryData.summary.totalItems}
+- Total KM driven: ${deliveryData.summary.totalKm} km
+- Average customers per day: ${deliveryData.summary.avgCustomersPerDay}
+- Average KM per day: ${deliveryData.summary.avgKmPerDay} km
+- Busiest day: ${deliveryData.summary.busiestDay ? deliveryData.summary.busiestDay.date + ' (' + deliveryData.summary.busiestDay.customers + ' customers)' : 'N/A'}
+
+TOP DELIVERY AREAS (by frequency):
+${deliveryData.topAreas.map((a, i) => `${i+1}. ${a[0]}: ${a[1]} deliveries`).join('\n') || 'No area data yet'}
+
+TOP PRODUCT CATEGORIES DELIVERED:
+${deliveryData.topProducts.map((p, i) => `${i+1}. ${p[0]}: ${p[1]} units`).join('\n') || 'No product data yet'}
+
+TOP CUSTOMERS (by number of orders):
+${deliveryData.topCustomers.map((c, i) => `${i+1}. ${c[0]}: ${c[1]} orders`).join('\n') || 'No customer data yet'}
+
+RECENT DELIVERY DAYS:
+${deliveryData.recentRoutes.map(r => `- ${r.date}: ${r.customers} customers, ${r.items} items, ${r.km.toFixed(1)} km, ${r.trips} trip(s)`).join('\n') || 'No recent routes'}
+
+Answer questions clearly and helpfully. Use specific numbers from the data above. Be conversational and concise. If asked something not covered by the data, say so honestly. Format responses with bullet points or bold text where helpful. All distances are in km, Ahmedabad context.`;
+
+  // Add to conversation history
+  aiChatHistory.push({ role: 'user', content: question });
+
+  try {
+    // Call via Netlify function (avoids CORS — runs server-side)
+    const response = await fetch('/.netlify/functions/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: aiChatHistory
+      })
+    });
+
+    removeTyping(typingId);
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || 'API error ' + response.status);
+    }
+
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'Sorry, I could not get a response.';
+
+    aiChatHistory.push({ role: 'assistant', content: reply });
+    // Keep history to last 10 exchanges to avoid token limits
+    if (aiChatHistory.length > 20) aiChatHistory = aiChatHistory.slice(-20);
+
+    appendAIMessage('bot', reply);
+  } catch (e) {
+    removeTyping(typingId);
+    appendAIMessage('bot', '⚠️ Could not connect to AI. Make sure you have internet access. Error: ' + e.message);
+  }
+}
+
+function appendAIMessage(role, text) {
+  const box = document.getElementById('ai-chat-box');
+  const isBot = role === 'bot';
+  const div = document.createElement('div');
+  div.className = 'ai-msg' + (isBot ? '' : ' ai-msg-user');
+
+  // Format markdown-style bold and bullets
+  const formatted = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/^• /gm, '• ')
+    .replace(/^- /gm, '• ')
+    .replace(/\n/g, '<br>');
+
+  div.innerHTML = `
+    <div class="ai-avatar ${isBot ? 'ai-avatar-bot' : 'ai-avatar-user'}">${isBot ? '🤖' : '👤'}</div>
+    <div class="ai-bubble ${isBot ? 'ai-bubble-bot' : 'ai-bubble-user'}">${formatted}</div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function showTyping() {
+  const box = document.getElementById('ai-chat-box');
+  const id = 'typing-' + Date.now();
+  const div = document.createElement('div');
+  div.className = 'ai-msg';
+  div.id = id;
+  div.innerHTML = `<div class="ai-avatar ai-avatar-bot">🤖</div><div class="ai-bubble ai-bubble-bot ai-typing"><div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div></div>`;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+  return id;
+}
+
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) el.remove();
+}
+
+function askSuggestion(btn) {
+  const q = btn.textContent;
+  document.getElementById('ai-input').value = q;
+  sendAIChat();
+}
+
+// ── PWA Service Worker registration ──
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(err => console.log('SW error:', err));
+  });
+}
+</script>
+</body>
+</html>

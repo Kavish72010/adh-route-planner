@@ -1,0 +1,14 @@
+# Real keys — never commit
+config.js
+.env
+
+# Customer data — never commit
+*.xlsx
+*.xls
+*.csv
+
+# System / editor files
+.DS_Store
+Thumbs.db
+.netlify/
+node_modules/
