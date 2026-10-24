@@ -1,6 +1,6 @@
  # Alpha Digital Home — Route Planner
 
-A delivery route planning and live tracking web app built for **Alpha Digital Home**, a Samsung Electronics brand store in Ahmedabad, India, that I manage.
+Built a route-planning and live delivery-tracking web app for Alpha Digital Home, a Samsung Electronics brand store in Ahmedabad, India. 
 
 **Live app:** https://lucky-nasturtium-601dbe.netlify.app
 
